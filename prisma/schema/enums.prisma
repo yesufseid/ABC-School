@@ -1,0 +1,5 @@
+enum UserType {
+  Staff
+  Parent
+  Student
+}
