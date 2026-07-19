@@ -1,4 +1,4 @@
-enum UserType {
+enum ProfileType {
   Staff
   Parent
   Student

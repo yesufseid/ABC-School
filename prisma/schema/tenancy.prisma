@@ -1,0 +1,32 @@
+model Tenant {
+  id          String @id @default(uuid())
+  name        String
+  description String
+  details     Json?
+
+  members Profile[]
+
+  // timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tenants")
+}
+
+model Profile {
+  id   String      @id @default(uuid())
+  name String
+  type ProfileType
+
+  // relationships
+  userId   String @unique @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  // timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("profiles")
+}

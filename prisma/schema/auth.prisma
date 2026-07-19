@@ -1,8 +1,7 @@
 model User {
-  id       String   @id @default(uuid())
-  email    String
-  password String
-  type     UserType
+  id          String @id @default(uuid())
+  phoneNumber String @unique @map("phone_number")
+  password    String
 
   // relationships
   profile Profile?
@@ -11,21 +10,5 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([email, type])
   @@map("users")
-}
-
-model Profile {
-  id   String @id @default(uuid())
-  name String
-
-  // relationships
-  userId String @unique @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // timestamps
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("profiles")
 }
