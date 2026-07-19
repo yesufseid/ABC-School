@@ -7,6 +7,7 @@ import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-pr
 @Global()
 @Module({
   providers: [DatabaseService],
+  exports: [DatabaseService],
 })
 export class DatabaseModule {}
 
