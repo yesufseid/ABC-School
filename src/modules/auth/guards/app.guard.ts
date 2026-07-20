@@ -4,7 +4,7 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AuthGuard } from '@nest/passport';
+import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC } from '../decorators/public.decorator';
 import { TokenPayload } from '../auth.types';
@@ -30,7 +30,7 @@ export class AppGuard extends AuthGuard('jwt') {
     return super.canActivate(context);
   }
 
-  handleRequest(err: any, user: TokenPayload, info: any) {
+  handleRequest<TokenPayload>(err: any, user: TokenPayload, info: any) {
     if (err || !user) {
       this.logger.error(
         'App authentication jwt validation failed',
