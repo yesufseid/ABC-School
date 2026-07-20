@@ -6,7 +6,7 @@ export class LoginDto {
     example: '+251912345678',
   })
   @IsPhoneNumber()
-  phonNumber: string;
+  phoneNumber: string;
 
   @ApiProperty({
     example: '000000',

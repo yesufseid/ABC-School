@@ -1,6 +1,11 @@
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { LoginDto } from './dtos/login.dto';
 import { DatabaseService } from '../database/database.service';
 import { HashingService } from './hashing.service';
@@ -22,10 +27,46 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const user = await this.db.tx.user.findUnique({
       where: {
-        phoneNumber: loginDto.phonNumber,
+        phoneNumber: loginDto.phoneNumber,
+      },
+      select: {
+        id: true,
+        password: true,
+        profile: {
+          select: {
+            name: true,
+            tenantId: true,
+            type: true,
+          },
+        },
       },
     });
 
-    return user;
+    if (!user?.profile) {
+      throw new NotFoundException(`User not found`);
+    }
+
+    const isMatch = await this.hashService.compare(
+      user.password,
+      loginDto.password,
+    );
+
+    if (!isMatch) {
+      throw new UnauthorizedException(`Invalid credentails`);
+    }
+
+    const accessToken = await this.tokenService.generateAccessToken({
+      phoneNumber: loginDto.phoneNumber,
+      tenantId: user.profile.tenantId,
+      type: user.profile.type,
+    });
+
+    return {
+      data: {
+        accessToken,
+        phoneNumber: loginDto.phoneNumber,
+        type: user.profile.type,
+      },
+    };
   }
 }
