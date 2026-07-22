@@ -58,7 +58,7 @@ export class TenantService {
 
     const profile = await this.db.tx.profile.create({
       data: {
-        name: tenant.name,
+        name: owner.phoneNumber,
         type: 'Owner',
         userId: owner.id,
         tenantId: tenant.id,
@@ -107,10 +107,12 @@ export class TenantService {
   async remove(id: string) {
     await this.findOne(id);
 
+    await this.db.tx.profile.deleteMany({
+      where: { tenantId: id },
+    });
+
     await this.db.tx.tenant.delete({
       where: { id },
     });
-
-    return { data: { id } };
   }
 }
