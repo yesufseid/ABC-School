@@ -1,4 +1,6 @@
 enum ProfileType {
+  Admin
+  Owner
   Staff
   Parent
   Student
