@@ -8,7 +8,6 @@ import {
   Post,
 } from '@nestjs/common';
 import { TenantService } from './tenant.service';
-import { AssignOwnerDto } from './dtos/assign-owner.dto';
 import { CreateTenantDto } from './dtos/create-tenant.dto';
 import { UpdateTenantDto } from './dtos/update-tenant.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -22,12 +21,6 @@ export class TenantController {
   @Post()
   create(@Body() dto: CreateTenantDto) {
     return this.tenantService.create(dto);
-  }
-
-  @Roles(ProfileType.Admin)
-  @Post(':id/assign-owner')
-  assignOwner(@Param('id') id: string, @Body() dto: AssignOwnerDto) {
-    return this.tenantService.assignOwner(id, dto);
   }
 
   @Roles(ProfileType.Admin)

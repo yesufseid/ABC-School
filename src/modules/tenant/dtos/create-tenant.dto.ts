@@ -5,12 +5,23 @@ import {
   IsOptional,
   IsPhoneNumber,
   IsString,
+  MinLength,
 } from 'class-validator';
 
 export class CreateTenantDto {
   @ApiProperty({ example: '+251912345678' })
   @IsPhoneNumber()
   ownerPhone: string;
+
+  @ApiProperty({ example: 'Girma Beyene' })
+  @IsString()
+  @IsNotEmpty()
+  ownerName: string;
+
+  @ApiProperty({ example: 'girma123' })
+  @IsString()
+  @MinLength(6)
+  password: string;
 
   @ApiProperty({ example: 'Axis International School' })
   @IsString()
@@ -27,5 +38,5 @@ export class CreateTenantDto {
   })
   @IsOptional()
   @IsObject()
-  details?: Record<string, unknown>;
+  details?: Record<string, string | number | boolean>;
 }

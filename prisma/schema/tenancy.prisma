@@ -1,8 +1,9 @@
 model Tenant {
-  id          String @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   description String
   details     Json?
+  verified    Boolean @default(false)
 
   members Profile[]
 
