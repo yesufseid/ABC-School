@@ -8,6 +8,7 @@ import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-pr
 import { DatabaseService } from './modules/database/database.service';
 import { APP_GUARD } from '@nestjs/core';
 import { AppGuard } from './modules/auth/guards/app.guard';
+import { RolesGuard } from './modules/auth/guards/roles.guard';
 
 // TODO: refactor config module and transactional db setup
 @Module({
@@ -36,6 +37,15 @@ import { AppGuard } from './modules/auth/guards/app.guard';
     FeatureModule,
   ],
 
-  providers: [{ provide: APP_GUARD, useClass: AppGuard }],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AppGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AppModule {}

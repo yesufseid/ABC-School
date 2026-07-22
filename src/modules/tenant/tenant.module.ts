@@ -1,17 +1,11 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { TenantService } from './tenant.service';
 import { TenantController } from './tenant.controller';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
+  imports: [AuthModule],
   controllers: [TenantController],
-  providers: [
-    TenantService,
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
-  ],
+  providers: [TenantService],
 })
 export class TenantModule {}
