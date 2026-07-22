@@ -7,7 +7,7 @@ model Tenant {
   members Profile[]
 
   // timestamps
-  createdAt DateTime @default(now()) @map("created_at") 
+  createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("tenants")

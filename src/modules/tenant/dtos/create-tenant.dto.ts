@@ -3,10 +3,15 @@ import {
   IsNotEmpty,
   IsObject,
   IsOptional,
+  IsPhoneNumber,
   IsString,
 } from 'class-validator';
 
 export class CreateTenantDto {
+  @ApiProperty({ example: '+251912345678' })
+  @IsPhoneNumber()
+  ownerPhone: string;
+
   @ApiProperty({ example: 'Axis International School' })
   @IsString()
   @IsNotEmpty()
