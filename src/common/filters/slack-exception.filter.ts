@@ -2,19 +2,20 @@ import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logge
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { TokenPayload } from '../../modules/auth/auth.types';
+import { SLACK_ERROR_CHANNEL_WEBHOOK, NODE_ENV } from '../../config/env.tokens';
 
 const SENSITIVE_FIELDS = ['password', 'token', 'secret', 'authorization', 'creditCard'];
 
 @Catch()
 export class SlackExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(SlackExceptionFilter.name);
-  private webhookUrl: string;
+  private slackErrorWebhookUrl: string;
 
   constructor(private configService: ConfigService) {
-    this.webhookUrl = this.configService.get<string>('WEB_HOOK');
+    this.slackErrorWebhookUrl = this.configService.get<string>(SLACK_ERROR_CHANNEL_WEBHOOK);
   }
 
-  private sanitizeBody(body: Record<string, any>): Record<string, any> {
+  private sanitizeBody(body: Record<string, any>): Record<string,string|number|boolean> {
     if (!body) return body;
     const sanitized = { ...body };
     for (const key of SENSITIVE_FIELDS) {
@@ -46,7 +47,7 @@ export class SlackExceptionFilter implements ExceptionFilter {
       const stack =
         exception instanceof Error ? exception.stack : String(exception);
 
-      if (process.env.NODE_ENV === 'production') {
+      if (this.configService.get(NODE_ENV) === 'production') {
         const blocks = [
           {
             type: 'header',
@@ -71,11 +72,15 @@ export class SlackExceptionFilter implements ExceptionFilter {
           },
         ];
 
-        await fetch(this.webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ blocks, text: `Error in ${request.method} ${request.url}` }),
-        }).catch((e) => this.logger.error('Slack notify failed', e));
+        try {
+          await fetch(this.slackErrorWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ blocks, text: `Error in ${request.method} ${request.url}` }),
+          });
+        } catch (e) {
+          this.logger.error('Slack notify failed', e);
+        }
       } else {
         this.logger.error(
           `[${request.method} ${request.url}] ${errorMessage}`,
