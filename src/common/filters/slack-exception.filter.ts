@@ -15,7 +15,7 @@ export class SlackExceptionFilter implements ExceptionFilter {
     this.slackErrorWebhookUrl = this.configService.get<string>(SLACK_ERROR_CHANNEL_WEBHOOK);
   }
 
-  private sanitizeBody(body: Record<string, any>): Record<string,string|number|boolean> {
+  private sanitizeBody(body: Record<string, string|number|boolean>): Record<string,string|number|boolean> {
     if (!body) return body;
     const sanitized = { ...body };
     for (const key of SENSITIVE_FIELDS) {
@@ -78,7 +78,7 @@ export class SlackExceptionFilter implements ExceptionFilter {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ blocks, text: `Error in ${request.method} ${request.url}` }),
           });
-        } catch (e) {
+        } catch (e: unknown) {
           this.logger.error('Slack notify failed', e);
         }
       } else {
@@ -92,7 +92,7 @@ export class SlackExceptionFilter implements ExceptionFilter {
 
     response.status(status).json({
       statusCode: status,
-      message: status >= 500 ? 'Internal server error' : exception['message'],
+      message: status >= 500 ? 'Internal server error' : exception instanceof HttpException ? exception.message : 'Bad request',
     });
   }
 }
