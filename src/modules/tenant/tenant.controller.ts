@@ -12,6 +12,7 @@ import { CreateTenantDto } from './dtos/create-tenant.dto';
 import { UpdateTenantDto } from './dtos/update-tenant.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
+import { SubscribeTenantDto } from './dtos/subscribe-tenant.dto';
 
 @Controller('tenant')
 export class TenantController {
@@ -21,6 +22,12 @@ export class TenantController {
   @Post()
   create(@Body() dto: CreateTenantDto) {
     return this.tenantService.create(dto);
+  }
+
+  @Roles(ProfileType.Admin)
+  @Post('subscribe')
+  subscribeTenant(@Body() subscribeTenantDto: SubscribeTenantDto) {
+    return this.tenantService.subscribeTenant(subscribeTenantDto);
   }
 
   @Roles(ProfileType.Admin)
@@ -39,6 +46,12 @@ export class TenantController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateTenantDto) {
     return this.tenantService.update(id, dto);
+  }
+
+  @Roles(ProfileType.Admin)
+  @Delete('subscribe/:id')
+  removeTenantSubscription(@Param('id') id: string) {
+    return this.tenantService.removeTenantSubscription(id);
   }
 
   @Roles(ProfileType.Admin)

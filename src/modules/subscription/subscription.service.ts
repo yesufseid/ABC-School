@@ -28,7 +28,9 @@ export class SubscriptionService {
     });
 
     if (existing) {
-      throw new ConflictException(`Subscription with name '${dto.name}' already exists`);
+      throw new ConflictException(
+        `Subscription with name '${dto.name}' already exists`,
+      );
     }
 
     await this.db.tx.subscription.create({
@@ -36,6 +38,7 @@ export class SubscriptionService {
         name: dto.name,
         months: dto.months,
         price: dto.price,
+        active: dto.active,
         features: dto.features,
       },
     });

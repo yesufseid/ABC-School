@@ -11,6 +11,7 @@ import { CreateTenantDto } from './dtos/create-tenant.dto';
 import { UpdateTenantDto } from './dtos/update-tenant.dto';
 import { HashingService } from '../auth/hashing.service';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
+import { SubscribeTenantDto } from './dtos/subscribe-tenant.dto';
 
 @Injectable()
 export class TenantService {
@@ -150,19 +151,6 @@ export class TenantService {
     return { message: `Updated School Successfully!` };
   }
 
-  async findOwner(phoneNumber: string) {
-    const owner = await this.db.tx.user.findUnique({
-      where: {
-        phoneNumber,
-      },
-      include: {
-        profile: true,
-      },
-    });
-
-    return owner;
-  }
-
   @Transactional()
   async remove(id: string) {
     const tenant = await this.findOne(id);
@@ -178,5 +166,71 @@ export class TenantService {
     return {
       message: `Removed School ${tenant.data.name} Successfully!`,
     };
+  }
+
+  // Tenant subscription handling instance methods
+  async subscribeTenant(subscribeTenantDto: SubscribeTenantDto) {
+    const subscriptionPlan = await this.db.tx.subscription.findUnique({
+      where: {
+        id: subscribeTenantDto.subscriptionId,
+      },
+      select: {
+        active: true,
+      },
+    });
+
+    if (!subscriptionPlan) {
+      throw new NotFoundException(`Subscription not Found`);
+    }
+
+    if (!subscriptionPlan.active) {
+      throw new ConflictException(`Subscription Plan not Active`);
+    }
+
+    // handle unmatched price payment in the ui
+
+    await this.db.tx.tenantSubscription.create({
+      data: {
+        tenantId: subscribeTenantDto.tenantId,
+        subscriptionId: subscribeTenantDto.subscriptionId,
+        paidAmount: subscribeTenantDto.paidAmount,
+      },
+    });
+
+    return {
+      message: `Subscribed Tenant Successfully!`,
+    };
+  }
+
+  async removeTenantSubscription(id: string) {
+    const tenantSubsription = await this.db.tx.tenantSubscription.findUnique({
+      where: { id },
+    });
+
+    if (!tenantSubsription) {
+      throw new NotFoundException(`Tenant Subscription not Found`);
+    }
+
+    await this.db.tx.tenantSubscription.delete({
+      where: { id },
+    });
+
+    return {
+      message: 'Tenant Subscription removed Successfully!',
+    };
+  }
+
+  // Helper instance methods
+  async findOwner(phoneNumber: string) {
+    const owner = await this.db.tx.user.findUnique({
+      where: {
+        phoneNumber,
+      },
+      include: {
+        profile: true,
+      },
+    });
+
+    return owner;
   }
 }
