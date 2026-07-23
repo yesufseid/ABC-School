@@ -2,11 +2,16 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { SlackExceptionFilter } from './common/filters/slack-exception.filter';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+
+  const configService = app.get(ConfigService);
+  app.useGlobalFilters(new SlackExceptionFilter(configService));
 
   app.setGlobalPrefix('api');
 
