@@ -88,6 +88,16 @@ export class SubscriptionService {
   async remove(id: string) {
     await this.findOne(id);
 
+    const tenantSubscriptions = await this.db.tx.tenantSubscription.findMany({
+      where: { subscriptionId: id },
+    });
+
+    if (tenantSubscriptions.length > 0) {
+      throw new ConflictException(
+        'Cannot delete subscription with active tenant subscriptions',
+      );
+    }
+
     await this.db.tx.subscription.delete({
       where: { id },
     });

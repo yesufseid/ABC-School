@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsNumber, IsObject, IsString, Min } from 'class-validator';
 
 export class CreateSubscriptionDto {
   @ApiProperty({ example: 'Basic Plan' })
@@ -18,6 +18,6 @@ export class CreateSubscriptionDto {
   price: number;
 
   @ApiProperty({ example: { smsLimit: 5000, apiAccess: true } })
-  @IsNotEmpty()
-  features: Record<string,  string | number | boolean>;
+  @IsObject()
+  features: Record<string, string | number | boolean>;
 }
