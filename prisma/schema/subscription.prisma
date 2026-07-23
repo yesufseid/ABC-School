@@ -1,0 +1,33 @@
+model Subscription {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  months   Int
+  price    Decimal @map("paid_amount") @db.Money
+  features Json
+
+  // relationships
+  tenantSubscriptions TenantSubscription[]
+
+  // timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("subscriptions")
+}
+
+model TenantSubscription {
+  id         String  @id @default(uuid())
+  paidAmount Decimal @map("paid_amount") @db.Money
+
+  // relationships
+  tenantId       String       @map("tenant_id")
+  tenant         Tenant       @relation(fields: [tenantId], references: [id])
+  subscriptionId String       @map("subscription_id")
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+
+  // timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tenant_subscriptions")
+}
