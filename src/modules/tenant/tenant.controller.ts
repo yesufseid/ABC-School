@@ -14,47 +14,41 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
 import { SubscribeTenantDto } from './dtos/subscribe-tenant.dto';
 
+@Roles(ProfileType.Admin)
 @Controller('tenant')
 export class TenantController {
   constructor(private readonly tenantService: TenantService) {}
 
-  @Roles(ProfileType.Admin)
   @Post()
   create(@Body() dto: CreateTenantDto) {
     return this.tenantService.create(dto);
   }
 
-  @Roles(ProfileType.Admin)
   @Post('subscribe')
   subscribeTenant(@Body() subscribeTenantDto: SubscribeTenantDto) {
     return this.tenantService.subscribeTenant(subscribeTenantDto);
   }
 
-  @Roles(ProfileType.Admin)
   @Get()
   findAll() {
     return this.tenantService.findAll();
   }
 
-  @Roles(ProfileType.Admin)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.tenantService.findOne(id);
   }
 
-  @Roles(ProfileType.Admin)
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateTenantDto) {
     return this.tenantService.update(id, dto);
   }
 
-  @Roles(ProfileType.Admin)
   @Delete('subscribe/:id')
   removeTenantSubscription(@Param('id') id: string) {
     return this.tenantService.removeTenantSubscription(id);
   }
 
-  @Roles(ProfileType.Admin)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.tenantService.remove(id);
