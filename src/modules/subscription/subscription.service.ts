@@ -23,7 +23,7 @@ export class SubscriptionService {
 
   @Transactional()
   async create(dto: CreateSubscriptionDto) {
-    const existing = await this.databaseService.subscription.findUnique({
+    const existing = await this.db.tx.subscription.findUnique({
       where: { name: dto.name },
     });
 
@@ -49,7 +49,7 @@ export class SubscriptionService {
   }
 
   async findOne(id: string) {
-    const subscription = await this.databaseService.subscription.findUnique({
+    const subscription = await this.db.tx.subscription.findUnique({
       where: { id },
     });
 
@@ -65,7 +65,7 @@ export class SubscriptionService {
     await this.findOne(id);
 
     if (dto.name) {
-      const existing = await this.databaseService.subscription.findUnique({
+      const existing = await this.db.tx.subscription.findUnique({
         where: { name: dto.name },
       });
 
