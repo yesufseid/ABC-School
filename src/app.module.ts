@@ -9,6 +9,7 @@ import { DatabaseService } from './modules/database/database.service';
 import { APP_GUARD } from '@nestjs/core';
 import { AppGuard } from './modules/auth/guards/app.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
+import { SubscriptionGuard } from './modules/auth/guards/subscription.guard';
 
 // TODO: refactor config module and transactional db setup
 @Module({
@@ -45,6 +46,10 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: SubscriptionGuard,
     },
   ],
 })
