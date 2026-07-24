@@ -176,6 +176,7 @@ export class TenantService {
       },
       select: {
         active: true,
+        months: true,
       },
     });
 
@@ -187,14 +188,17 @@ export class TenantService {
       throw new ConflictException(`Subscription Plan not Active`);
     }
 
-    // handle unmatched price payment in the ui
+    const endDate = new Date(subscribeTenantDto.startDate);
+    endDate.setMonth(endDate.getMonth() + subscriptionPlan.months);
 
+    // handle unmatched price payment and already subscribed tenant warnings in the ui
     await this.db.tx.tenantSubscription.create({
       data: {
         tenantId: subscribeTenantDto.tenantId,
         subscriptionId: subscribeTenantDto.subscriptionId,
         startDate: subscribeTenantDto.startDate,
         paidAmount: subscribeTenantDto.paidAmount,
+        endDate,
       },
     });
 
