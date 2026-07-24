@@ -193,6 +193,7 @@ export class TenantService {
       data: {
         tenantId: subscribeTenantDto.tenantId,
         subscriptionId: subscribeTenantDto.subscriptionId,
+        startDate: subscribeTenantDto.startDate,
         paidAmount: subscribeTenantDto.paidAmount,
       },
     });

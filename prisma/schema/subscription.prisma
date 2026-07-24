@@ -17,8 +17,9 @@ model Subscription {
 }
 
 model TenantSubscription {
-  id         String  @id @default(uuid())
-  paidAmount Decimal @map("paid_amount") @db.Money
+  id         String   @id @default(uuid())
+  startDate  DateTime @map("start_date")
+  paidAmount Decimal  @map("paid_amount") @db.Money
 
   // relationships
   tenantId       String       @map("tenant_id")
