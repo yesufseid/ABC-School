@@ -68,15 +68,39 @@ export class TenantService {
             user: true,
           },
         },
+        tenantSubscriptions: {
+          orderBy: { endDate: 'desc' },
+          take: 1,
+          include: {
+            subscription: true,
+          },
+        },
       },
     });
 
     const processedTenants = tenants.map((tenant) => {
-      const { members, ...rest } = tenant;
+      const { members, tenantSubscriptions, ...rest } = tenant;
+
+      const owner = members[0];
+
+      if (!owner) {
+        throw new ConflictException(`School ${tenant.name} has no owner`);
+      }
+
+      const subscriptionEndDate =
+        tenantSubscriptions[0]?.endDate.toISOString().split('T')[0] ?? null;
 
       return {
         ...rest,
-        owner: members[0],
+        owner: owner
+          ? {
+              id: owner.id,
+              name: owner.name,
+              phoneNumber: owner.user.phoneNumber,
+              userId: owner.userId,
+            }
+          : null,
+        subscriptionEndDate,
       };
     });
 
@@ -86,16 +110,24 @@ export class TenantService {
   async findOne(id: string) {
     const tenant = await this.db.tx.tenant.findUnique({
       where: { id },
-      include: { members: { include: { user: true } } },
+      include: {
+        members: { include: { user: { omit: { password: true } } } },
+        tenantSubscriptions: {
+          orderBy: { endDate: 'desc' },
+          include: { subscription: true },
+        },
+      },
     });
 
     if (!tenant) {
       throw new NotFoundException(`School not found`);
     }
 
-    const owner = tenant.members.find(
-      (member) => member.type === ProfileType.Owner,
-    );
+    const { members, tenantSubscriptions, ...rest } = tenant;
+    const subscriptionEndDate =
+      tenantSubscriptions[0]?.endDate?.toISOString().split('T')[0] ?? null;
+
+    const owner = members.find((member) => member.type === ProfileType.Owner);
 
     if (!owner) {
       throw new ConflictException(`Missing school owner`);
@@ -103,8 +135,31 @@ export class TenantService {
 
     return {
       data: {
-        ...tenant,
-        owner,
+        ...rest,
+        subscriptionEndDate,
+        owner: {
+          id: owner.id,
+          name: owner.name,
+          phoneNumber: owner.user.phoneNumber,
+          userId: owner.userId,
+        },
+        members: members
+          .filter((member) => member.id !== owner.id)
+          .map((member) => ({
+            id: member.id,
+            name: member.name,
+            phoneNumber: member.user.phoneNumber,
+            type: member.type,
+            userId: member.userId,
+          })),
+        tenantSubscriptions: tenantSubscriptions.map((ts) => ({
+          ...ts,
+          paidAmount: ts.paidAmount.toNumber(),
+          subscription: {
+            ...ts.subscription,
+            price: ts.subscription.price.toNumber(),
+          },
+        })),
       },
     };
   }
@@ -116,7 +171,7 @@ export class TenantService {
       this.findOwner(dto.ownerPhone),
     ]);
 
-    if (dto.ownerPhone !== existingTenant.data.owner.user.phoneNumber && user) {
+    if (dto.ownerPhone !== existingTenant.data.owner.phoneNumber && user) {
       throw new ConflictException(`School owner exists with this phone number`);
     }
 
@@ -126,9 +181,6 @@ export class TenantService {
         phoneNumber: dto.ownerPhone,
         profile: {
           update: {
-            where: {
-              id: existingTenant.data.owner.id,
-            },
             data: {
               name: dto.ownerName,
               type: ProfileType.Owner,

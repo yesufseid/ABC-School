@@ -48,7 +48,12 @@ export class SubscriptionService {
 
   async findAll() {
     const subscriptions = await this.databaseService.subscription.findMany();
-    return { data: subscriptions };
+    return {
+      data: subscriptions.map((sub) => ({
+        ...sub,
+        price: sub.price.toNumber(),
+      })),
+    };
   }
 
   async findOne(id: string) {
@@ -61,7 +66,16 @@ export class SubscriptionService {
       throw new NotFoundException(`Subscription not found`);
     }
 
-    return { data: subscription };
+    return {
+      data: {
+        ...subscription,
+        price: subscription.price.toNumber(),
+        tenantSubscriptions: subscription.tenantSubscriptions.map((ts) => ({
+          ...ts,
+          paidAmount: ts.paidAmount.toNumber(),
+        })),
+      },
+    };
   }
 
   @Transactional()
