@@ -9,6 +9,7 @@ import { DatabaseService } from './modules/database/database.service';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AppGuard } from './modules/auth/guards/app.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
+import { SubscriptionGuard } from './modules/auth/guards/subscription.guard';
 import { SlackExceptionFilter } from './common/filters/slack-exception.filter';
 
 // TODO: refactor config module and transactional db setup
@@ -39,6 +40,7 @@ import { SlackExceptionFilter } from './common/filters/slack-exception.filter';
   ],
 
   providers: [
+    // guards
     {
       provide: APP_GUARD,
       useClass: AppGuard,
@@ -47,6 +49,12 @@ import { SlackExceptionFilter } from './common/filters/slack-exception.filter';
       provide: APP_GUARD,
       useClass: RolesGuard,
     },
+    {
+      provide: APP_GUARD,
+      useClass: SubscriptionGuard,
+    },
+
+    // exception filters
     {
       provide: APP_FILTER,
       useClass: SlackExceptionFilter,

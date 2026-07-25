@@ -12,36 +12,43 @@ import { CreateTenantDto } from './dtos/create-tenant.dto';
 import { UpdateTenantDto } from './dtos/update-tenant.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
+import { SubscribeTenantDto } from './dtos/subscribe-tenant.dto';
 
+@Roles(ProfileType.Admin)
 @Controller('tenant')
 export class TenantController {
   constructor(private readonly tenantService: TenantService) {}
 
-  @Roles(ProfileType.Admin)
   @Post()
   create(@Body() dto: CreateTenantDto) {
     return this.tenantService.create(dto);
   }
 
-  @Roles(ProfileType.Admin)
+  @Post('subscribe')
+  subscribeTenant(@Body() subscribeTenantDto: SubscribeTenantDto) {
+    return this.tenantService.subscribeTenant(subscribeTenantDto);
+  }
+
   @Get()
   findAll() {
     return this.tenantService.findAll();
   }
 
-  @Roles(ProfileType.Admin)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.tenantService.findOne(id);
   }
 
-  @Roles(ProfileType.Admin)
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateTenantDto) {
     return this.tenantService.update(id, dto);
   }
 
-  @Roles(ProfileType.Admin)
+  @Delete('subscribe/:id')
+  removeTenantSubscription(@Param('id') id: string) {
+    return this.tenantService.removeTenantSubscription(id);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.tenantService.remove(id);

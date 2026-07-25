@@ -1,5 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsNumber, IsObject, IsString, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateSubscriptionDto {
   @ApiProperty({ example: 'Basic Plan' })
@@ -16,6 +25,11 @@ export class CreateSubscriptionDto {
   @IsNumber()
   @Min(0)
   price: number;
+
+  @ApiProperty({ example: true })
+  @IsBoolean()
+  @IsOptional()
+  active: boolean = true;
 
   @ApiProperty({ example: { smsLimit: 5000, apiAccess: true } })
   @IsObject()

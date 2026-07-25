@@ -37,6 +37,17 @@ export class AuthService {
             name: true,
             tenantId: true,
             type: true,
+            tenant: {
+              select: {
+                tenantSubscriptions: {
+                  orderBy: { endDate: 'desc' },
+                  take: 1,
+                  select: {
+                    endDate: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -55,10 +66,14 @@ export class AuthService {
       throw new UnauthorizedException(`Invalid credentails`);
     }
 
+    const subscriptionEndDate =
+      user.profile?.tenant?.tenantSubscriptions[0]?.endDate?.toISOString();
+
     const accessToken = await this.tokenService.generateAccessToken({
       phoneNumber: loginDto.phoneNumber,
       tenantId: user.profile.tenantId,
       type: user.profile.type,
+      subscriptionEndDate,
     });
 
     return {
@@ -66,6 +81,7 @@ export class AuthService {
         accessToken,
         phoneNumber: loginDto.phoneNumber,
         type: user.profile.type,
+        subscriptionEndDate,
       },
     };
   }

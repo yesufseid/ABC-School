@@ -23,14 +23,16 @@ export class AppGuard extends AuthGuard('jwt') {
       context.getHandler(),
     ]);
 
-    if (isPublic) {
-      return true;
-    }
+    if (isPublic) return true;
 
     return super.canActivate(context);
   }
 
-  handleRequest<TokenPayload>(err: any, user: TokenPayload, info: any) {
+  handleRequest<T extends TokenPayload>(
+    err?: unknown,
+    user?: T,
+    info?: unknown,
+  ) {
     if (err || !user) {
       this.logger.error(
         'App authentication jwt validation failed',

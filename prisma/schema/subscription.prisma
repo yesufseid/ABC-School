@@ -3,6 +3,7 @@ model Subscription {
   name     String  @unique
   months   Int
   price    Decimal @map("paid_amount") @db.Money
+  active   Boolean @default(true)
   features Json
 
   // relationships
@@ -16,8 +17,10 @@ model Subscription {
 }
 
 model TenantSubscription {
-  id         String  @id @default(uuid())
-  paidAmount Decimal @map("paid_amount") @db.Money
+  id         String   @id @default(uuid())
+  startDate  DateTime @map("start_date")
+  endDate    DateTime @map("end_date")
+  paidAmount Decimal  @map("paid_amount") @db.Money
 
   // relationships
   tenantId       String       @map("tenant_id")
@@ -29,5 +32,7 @@ model TenantSubscription {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index(fields: [subscriptionId])
+  @@index(fields: [tenantId])
   @@map("tenant_subscriptions")
 }
