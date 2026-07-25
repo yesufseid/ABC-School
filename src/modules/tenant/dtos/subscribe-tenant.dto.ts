@@ -20,8 +20,9 @@ export class SubscribeTenantDto {
   @IsDate()
   startDate: Date;
 
-  @ApiProperty({ example: 24_000 })
+  @ApiProperty({ example: 2999.99 })
+  @Transform(({ value }) => (typeof value === 'string' ? Number(value) : value))
   @IsNumber()
   @IsPositive()
-  paidAmount: string;
+  paidAmount:number;
 }
