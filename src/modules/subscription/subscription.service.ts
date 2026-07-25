@@ -48,20 +48,35 @@ export class SubscriptionService {
 
   async findAll() {
     const subscriptions = await this.databaseService.subscription.findMany();
-    return { data: subscriptions };
+    return {
+      data: subscriptions.map((sub) => ({
+        ...sub,
+        price: sub.price.toNumber(),
+      })),
+    };
   }
 
   async findOne(id: string) {
     const subscription = await this.db.tx.subscription.findUnique({
       where: { id },
-      include: { tenantSubscriptions: true },
+      include: { tenantSubscriptions: { include: { tenant: true } } },
     });
 
     if (!subscription) {
       throw new NotFoundException(`Subscription not found`);
     }
 
-    return { data: subscription };
+    return {
+      data: {
+        ...subscription,
+        price: subscription.price.toNumber(),
+        tenantSubscriptions: subscription.tenantSubscriptions.map((ts) => ({
+          ...ts,
+          tenantName: ts.tenant.name,
+          paidAmount: ts.paidAmount.toNumber(),
+        })),
+      },
+    };
   }
 
   @Transactional()

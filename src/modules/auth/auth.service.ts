@@ -80,6 +80,7 @@ export class AuthService {
       data: {
         accessToken,
         phoneNumber: loginDto.phoneNumber,
+        name: user.profile.name,
         type: user.profile.type,
         subscriptionEndDate,
       },
