@@ -188,10 +188,22 @@ export class TenantService {
       throw new ConflictException(`Subscription Plan not Active`);
     }
 
+    const existingSubscription = await this.db.tx.tenantSubscription.findFirst({
+      where: {
+        tenantId: subscribeTenantDto.tenantId,
+        endDate: { gte: new Date() },
+      },
+    });
+
+    if (existingSubscription) {
+      throw new ConflictException(
+        `Tenant already has an active subscription ending at ${existingSubscription.endDate.toISOString()}`,
+      );
+    }
+
     const endDate = new Date(subscribeTenantDto.startDate);
     endDate.setMonth(endDate.getMonth() + subscriptionPlan.months);
 
-    // handle unmatched price payment and already subscribed tenant warnings in the ui
     await this.db.tx.tenantSubscription.create({
       data: {
         tenantId: subscribeTenantDto.tenantId,
