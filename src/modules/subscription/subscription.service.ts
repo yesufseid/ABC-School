@@ -59,7 +59,7 @@ export class SubscriptionService {
   async findOne(id: string) {
     const subscription = await this.db.tx.subscription.findUnique({
       where: { id },
-      include: { tenantSubscriptions: true },
+      include: { tenantSubscriptions: { include: { tenant: true } } },
     });
 
     if (!subscription) {
@@ -72,6 +72,7 @@ export class SubscriptionService {
         price: subscription.price.toNumber(),
         tenantSubscriptions: subscription.tenantSubscriptions.map((ts) => ({
           ...ts,
+          tenantName: ts.tenant.name,
           paidAmount: ts.paidAmount.toNumber(),
         })),
       },
