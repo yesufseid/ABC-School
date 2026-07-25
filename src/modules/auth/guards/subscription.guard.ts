@@ -24,7 +24,7 @@ export class SubscriptionGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<{ user: TokenPayload }>();
 
-    if (!request.user.tenantId) return true;
+    if (!request.user?.tenantId) return true;
 
     const subscriptionEndDateString = request.user.subscriptionEndDate;
 
