@@ -7,6 +7,7 @@ import {
 import { TokenPayload } from '../auth.types';
 import { Reflector } from '@nestjs/core';
 import { SUBSCRIPTION_IMMUNE } from '../decorators/subscription-immune.decorator';
+import { IS_PUBLIC } from '../decorators/public.decorator';
 
 @Injectable()
 export class SubscriptionGuard implements CanActivate {
@@ -15,6 +16,13 @@ export class SubscriptionGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext) {
+    const isPublic = this.reflector?.getAllAndOverride(IS_PUBLIC, [
+      context.getClass(),
+      context.getHandler(),
+    ]);
+
+    if (isPublic) return true;
+
     const isSubscriptionImmune = this.reflector?.getAllAndOverride(
       SUBSCRIPTION_IMMUNE,
       [context.getClass(), context.getHandler()],
