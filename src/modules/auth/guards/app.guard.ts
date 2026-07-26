@@ -8,12 +8,17 @@ import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC } from '../decorators/public.decorator';
 import { TokenPayload } from '../auth.types';
+import { ClsService } from 'nestjs-cls';
+import { REQUEST_TENANT_ID } from '../auth.constants';
 
 @Injectable()
 export class AppGuard extends AuthGuard('jwt') {
   private readonly logger = new Logger(AppGuard.name);
 
-  constructor(private readonly reflector?: Reflector) {
+  constructor(
+    private readonly cls: ClsService,
+    private readonly reflector?: Reflector,
+  ) {
     super();
   }
 
@@ -53,6 +58,10 @@ export class AppGuard extends AuthGuard('jwt') {
       }
 
       throw new UnauthorizedException('Unauthorized');
+    }
+
+    if (user.tenantId) {
+      this.cls.set(REQUEST_TENANT_ID, user.tenantId);
     }
 
     return user;
