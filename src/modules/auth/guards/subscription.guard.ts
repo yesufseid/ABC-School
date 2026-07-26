@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   Logger,
 } from '@nestjs/common';
@@ -32,16 +33,21 @@ export class SubscriptionGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<{ user: TokenPayload }>();
 
-    if (!request.user.tenantId) return true;
+    if (!request.user.tenantId && request.user.type === 'Admin') return true;
 
     const subscriptionEndDateString = request.user.subscriptionEndDate;
 
-    if (!subscriptionEndDateString) return false;
+    if (!subscriptionEndDateString)
+      throw new ForbiddenException(`No Subscription Date`);
 
     const subscriptionEndDate = new Date(subscriptionEndDateString);
 
-    if (Number.isNaN(subscriptionEndDate.getTime())) return false;
+    if (Number.isNaN(subscriptionEndDate.getTime()))
+      throw new ForbiddenException(`Invalid Subscription Date`);
 
-    return subscriptionEndDate.getTime() > new Date().getTime();
+    if (subscriptionEndDate.getTime() < new Date().getTime())
+      throw new ForbiddenException(`Subscription Expired`);
+
+    return true;
   }
 }

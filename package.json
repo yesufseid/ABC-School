@@ -18,11 +18,17 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:integration": "jest --config test/jest-e2e.json --runInBand",
+    "test:integration:watch": "jest --config test/jest-e2e.json --watch --runInBand",
+    "test:integration:auth": "jest --config test/jest-e2e.json --testPathPattern=\"auth\" --runInBand",
+    "test:integration:tenant": "jest --config test/jest-e2e.json --testPathPattern=\"tenant\" --runInBand",
+    "test:integration:subscription": "jest --config test/jest-e2e.json --testPathPattern=\"subscription\" --runInBand",
     "db:push": "npx prisma db push --schema=./prisma/schema",
     "db:generate": "npx prisma generate --schema=./prisma/schema",
     "db:sync": "pnpm db:push && pnpm db:generate",
     "db:migrate": "npx prisma migrate dev --schema=./prisma/schema",
-    "db:seed:dev": "npx tsx prisma/seed.ts"
+    "db:seed:dev": "npx tsx prisma/seed.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@nestjs-cls/transactional": "^3.2.1",
@@ -48,6 +54,7 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.5.0",
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",
@@ -60,6 +67,7 @@
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
+    "husky": "^9.1.7",
     "jest": "^29.5.0",
     "prettier": "^3.0.0",
     "prisma": "^7.8.0",
