@@ -60,12 +60,14 @@ export class DatabaseService
             ) {
               args.where = {
                 ...args.where,
+                tenantId,
               };
             }
 
             if (operation === 'create' || operation === 'update') {
               args.data = {
                 ...args.data,
+                tenantId,
               };
             }
 
