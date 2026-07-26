@@ -63,7 +63,7 @@ export class AuthService {
     );
 
     if (!isMatch) {
-      throw new UnauthorizedException(`Invalid credentails`);
+      throw new UnauthorizedException(`Invalid credentials`);
     }
 
     const subscriptionEndDate =
