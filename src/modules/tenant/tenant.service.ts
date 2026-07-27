@@ -97,7 +97,7 @@ export class TenantService {
               id: owner.id,
               name: owner.name,
               phoneNumber: owner.user.phoneNumber,
-              userId: owner.userId,
+              userId: owner.user.id,
             }
           : null,
         subscriptionEndDate,
@@ -141,7 +141,7 @@ export class TenantService {
           id: owner.id,
           name: owner.name,
           phoneNumber: owner.user.phoneNumber,
-          userId: owner.userId,
+          userId: owner.user.id,
         },
         members: members
           .filter((member) => member.id !== owner.id)
@@ -150,7 +150,7 @@ export class TenantService {
             name: member.name,
             phoneNumber: member.user.phoneNumber,
             type: member.type,
-            userId: member.userId,
+            userId: member.user.id,
           })),
         tenantSubscriptions: tenantSubscriptions.map((ts) => ({
           ...ts,

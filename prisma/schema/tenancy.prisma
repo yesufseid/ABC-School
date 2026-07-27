@@ -5,10 +5,8 @@ model Tenant {
   details     Json?
   verifiedAt  DateTime? @map("verified_at")
 
-  // relationships
   members Profile[]
 
-  // timestamps
   createdAt           DateTime             @default(now()) @map("created_at")
   updatedAt           DateTime             @updatedAt @map("updated_at")
   tenantSubscriptions TenantSubscription[]
@@ -21,18 +19,15 @@ model Profile {
   name String
   type ProfileType
 
-  // relationships
-  userId   String  @unique @map("user_id")
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenantId String? @map("tenant_id")
   tenant   Tenant? @relation(fields: [tenantId], references: [id])
 
-  // timestamps
+  user  User?
+  staff Staff?
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([id, tenantId])
-  @@index(fields: [tenantId])
-  @@index(fields: [userId])
+  @@index([tenantId])
   @@map("profiles")
 }

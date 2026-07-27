@@ -1,0 +1,25 @@
+model Staff {
+  id           String    @id @default(uuid())
+  firstName    String
+  middleName   String?
+  lastName     String
+  email        String?
+  address      String?
+  sex          Sex?
+  startingDate DateTime  @map("starting_date")
+  position     Position
+  department   Department?
+  verifiedAt   DateTime? @map("verified_at")
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  profileId String  @unique @map("profile_id")
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("staffs")
+}
