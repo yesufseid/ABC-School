@@ -7,8 +7,6 @@ import {
   IsOptional,
   IsPhoneNumber,
   IsString,
-  IsUUID,
-  MinLength,
 } from 'class-validator';
 import { Sex, Position, Department } from 'prisma/src/generated/prisma/enums';
 
@@ -16,11 +14,6 @@ export class CreateStaffDto {
   @ApiProperty({ example: '+251912345678' })
   @IsPhoneNumber()
   phoneNumber: string;
-
-  @ApiProperty({ example: 'staff123' })
-  @IsString()
-  @MinLength(6)
-  password: string;
 
   @ApiProperty({ example: 'Abebe' })
   @IsString()
@@ -65,9 +58,4 @@ export class CreateStaffDto {
   @IsOptional()
   @IsEnum(Department)
   department?: Department;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsUUID()
-  tenantId?: string;
 }

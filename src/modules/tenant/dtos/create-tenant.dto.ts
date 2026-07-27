@@ -39,4 +39,9 @@ export class CreateTenantDto {
   @IsOptional()
   @IsObject()
   details?: Record<string, string | number | boolean>;
+
+  @ApiPropertyOptional({ example: 'ADC' })
+  @IsOptional()
+  @IsString()
+  branchCode?: string;
 }

@@ -6,7 +6,6 @@ import {
   IsOptional,
   IsPhoneNumber,
   IsString,
-  MinLength,
 } from 'class-validator';
 import { Sex, Position, Department } from 'prisma/src/generated/prisma/enums';
 
@@ -15,12 +14,6 @@ export class UpdateStaffDto {
   @IsOptional()
   @IsPhoneNumber()
   phoneNumber?: string;
-
-  @ApiPropertyOptional({ example: 'newpass123' })
-  @IsOptional()
-  @IsString()
-  @MinLength(6)
-  password?: string;
 
   @ApiPropertyOptional({ example: 'Abebe' })
   @IsOptional()

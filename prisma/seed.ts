@@ -33,13 +33,12 @@ async function main() {
       data: {
         phoneNumber: user.phone,
         password: hashedPassword,
-        ...(user.type === 'Admin'
-          ? {
-              profile: {
-                create: { name: user.name, type: 'Admin' },
-              },
-            }
-          : {}),
+        profile: {
+          create: {
+            name: user.name,
+            type: user.type === 'Admin' ? 'Admin' : 'Owner',
+          },
+        },
       },
     });
 

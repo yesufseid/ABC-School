@@ -15,8 +15,8 @@ import { TokenPayload } from 'src/modules/auth/auth.types';
 import { CreateStaffDto } from './dtos/create-staff.dto';
 import { UpdateStaffDto } from './dtos/update-staff.dto';
 
-@Roles(ProfileType.Admin, ProfileType.Owner)
-@Controller('staff')
+@Roles(ProfileType.Owner, ProfileType.Registral)
+@Controller('registral/staff')
 export class StaffController {
   constructor(private readonly staffService: StaffService) {}
 

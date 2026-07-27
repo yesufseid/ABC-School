@@ -9,10 +9,15 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import { HashingService } from '../../auth/hashing.service';
-import { ProfileType, Sex } from 'prisma/src/generated/prisma/enums';
+import { ProfileType } from 'prisma/src/generated/prisma/enums';
 import { CreateStaffDto } from './dtos/create-staff.dto';
 import { UpdateStaffDto } from './dtos/update-staff.dto';
 import { TokenPayload } from 'src/modules/auth/auth.types';
+import {
+  generatePassword,
+  generateStaffId,
+} from 'src/common/helpers/generator.helper';
+import { Prisma } from 'prisma/src/generated/prisma/client';
 
 @Injectable()
 export class StaffService {
@@ -28,17 +33,36 @@ export class StaffService {
 
   @Transactional()
   async create(dto: CreateStaffDto, user: TokenPayload) {
-    const tenantId = this.resolveTenantId(dto.tenantId, user);
+    const tenantId = this.resolveTenantId(user);
+
+    const tenant = await this.db.tx.tenant.findUnique({
+      where: { id: tenantId },
+      select: { branchCode: true },
+    });
+
+    if (!tenant?.branchCode) {
+      throw new ConflictException(
+        'Tenant branch code is not configured. Set a branch code first.',
+      );
+    }
 
     const existingUser = await this.db.tx.user.findUnique({
       where: { phoneNumber: dto.phoneNumber },
     });
 
     if (existingUser) {
-      throw new ConflictException('Staff with this phone number already exists');
+      throw new ConflictException(
+        'Staff with this phone number already exists',
+      );
     }
 
-    const hashedPassword = await this.hashingService.hash(dto.password);
+    const count = await this.db.tx.staff.count({
+      where: { tenantId },
+    });
+
+    const staffId = generateStaffId(tenant.branchCode, new Date().getFullYear(), count + 1);
+    const rawPassword = generatePassword();
+    const hashedPassword = await this.hashingService.hash(rawPassword);
 
     const fullName = dto.middleName
       ? `${dto.firstName} ${dto.middleName} ${dto.lastName}`
@@ -57,6 +81,7 @@ export class StaffService {
         },
         staff: {
           create: {
+            staffId,
             firstName: dto.firstName,
             middleName: dto.middleName,
             lastName: dto.lastName,
@@ -72,117 +97,80 @@ export class StaffService {
       },
       include: {
         user: true,
-        staff: true,
+        staff: { include: { profile: { include: { user: true } } } },
       },
     });
 
-    return { data: this.formatStaffResponse(profile) };
+    this.logger.log(
+      `Staff [${staffId}] phone: ${dto.phoneNumber} temporary password: ${rawPassword}`,
+    );
+
+    return { data: this.formatStaffResponse(profile.staff!) };
   }
 
   async findAll(user: TokenPayload) {
-    const where: any = { type: ProfileType.Staff };
+    const where: Prisma.StaffWhereInput = {};
 
     if (user.type !== ProfileType.Admin) {
-      where.tenantId = user.tenantId;
+      where.tenantId = user.tenantId!;
     }
 
-    const profiles = await this.databaseService.profile.findMany({
+    const staffs = await this.databaseService.staff.findMany({
       where,
       include: {
-        user: { omit: { password: true } },
-        staff: true,
+        profile: { include: { user: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    return { data: profiles.map((p) => this.formatStaffResponse(p)) };
+    return { data: staffs.map((s) => this.formatStaffResponse(s)) };
   }
 
   async findOne(id: string, user: TokenPayload) {
-    const profile = await this.databaseService.profile.findUnique({
+    const staff = await this.databaseService.staff.findUnique({
       where: { id },
       include: {
-        user: { omit: { password: true } },
-        staff: true,
+        profile: { include: { user: true } },
       },
     });
 
-    if (!profile || profile.type !== ProfileType.Staff || !profile.staff) {
+    if (!staff || !staff.profile) {
       throw new NotFoundException('Staff not found');
     }
 
     if (
       user.type !== ProfileType.Admin &&
-      profile.tenantId !== user.tenantId
+      staff.tenantId !== user.tenantId
     ) {
       throw new ForbiddenException('Access denied');
     }
 
-    return { data: this.formatStaffResponse(profile) };
+    return { data: this.formatStaffResponse(staff) };
   }
 
   @Transactional()
   async update(id: string, dto: UpdateStaffDto, user: TokenPayload) {
-    const existing = await this.findOne(id, user);
-    const staffData: any = {};
-    const profileData: any = {};
+    const staff = await this.databaseService.staff.findUnique({
+      where: { id },
+    });
 
-    if (dto.firstName || dto.middleName || dto.lastName) {
-      const firstName = dto.firstName ?? existing.data.firstName;
-      const middleName =
-        dto.middleName !== undefined
-          ? dto.middleName
-          : existing.data.middleName;
-      const lastName = dto.lastName ?? existing.data.lastName;
-      profileData.name = middleName
-        ? `${firstName} ${middleName} ${lastName}`
-        : `${firstName} ${lastName}`;
+    if (!staff) {
+      throw new NotFoundException('Staff not found');
     }
 
-    if (dto.firstName) staffData.firstName = dto.firstName;
-    if (dto.middleName !== undefined) staffData.middleName = dto.middleName;
-    if (dto.lastName) staffData.lastName = dto.lastName;
-    if (dto.email !== undefined) staffData.email = dto.email;
-    if (dto.address !== undefined) staffData.address = dto.address;
-    if (dto.sex !== undefined) staffData.sex = dto.sex;
-    if (dto.startingDate) staffData.startingDate = new Date(dto.startingDate);
-    if (dto.position) staffData.position = dto.position;
-    if (dto.department !== undefined) staffData.department = dto.department;
-
-    const userData: any = {};
-    if (dto.phoneNumber) userData.phoneNumber = dto.phoneNumber;
-
-    if (dto.password) {
-      const existingUser = await this.db.tx.user.findUnique({
-        where: { id: existing.data.userId },
-        select: { id: true },
-      });
-
-      if (!existingUser) {
-        throw new NotFoundException('User not found');
-      }
-
-      userData.password = await this.hashingService.hash(dto.password);
+    if (
+      user.type !== ProfileType.Admin &&
+      staff.tenantId !== user.tenantId
+    ) {
+      throw new ForbiddenException('Access denied');
     }
 
-    if (Object.keys(userData).length > 0) {
-      await this.db.tx.user.update({
-        where: { id: existing.data.userId },
-        data: userData,
-      });
-    }
+    const updateData = this.buildStaffUpdate(dto);
 
-    if (Object.keys(staffData).length > 0) {
+    if (Object.keys(updateData).length > 0) {
       await this.db.tx.staff.update({
-        where: { id: existing.data.staffId },
-        data: staffData,
-      });
-    }
-
-    if (Object.keys(profileData).length > 0) {
-      await this.db.tx.profile.update({
         where: { id },
-        data: profileData,
+        data: updateData,
       });
     }
 
@@ -191,30 +179,30 @@ export class StaffService {
 
   @Transactional()
   async remove(id: string, user: TokenPayload) {
-    const existing = await this.findOne(id, user);
-
-    await this.db.tx.user.delete({
-      where: { id: existing.data.userId },
+    const staff = await this.databaseService.staff.findUnique({
+      where: { id },
+      include: { profile: { include: { user: true } } },
     });
 
-    await this.db.tx.profile.delete({
-      where: { id },
+    if (!staff || !staff.profile) {
+      throw new NotFoundException('Staff not found');
+    }
+
+    if (
+      user.type !== ProfileType.Admin &&
+      staff.tenantId !== user.tenantId
+    ) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    await this.db.tx.user.delete({
+      where: { id: staff.profile.user!.id },
     });
 
     return { message: 'Staff removed successfully' };
   }
 
-  private resolveTenantId(
-    dtoTenantId: string | undefined,
-    user: TokenPayload,
-  ): string {
-    if (user.type === ProfileType.Admin) {
-      if (!dtoTenantId) {
-        throw new ConflictException('tenantId is required for admin');
-      }
-      return dtoTenantId;
-    }
-
+  private resolveTenantId(user: TokenPayload): string {
     if (!user.tenantId) {
       throw new ForbiddenException('Access denied');
     }
@@ -222,26 +210,45 @@ export class StaffService {
     return user.tenantId;
   }
 
-  private formatStaffResponse(profile: any) {
+  private buildStaffUpdate(dto: UpdateStaffDto) {
+    const data: Record<string, unknown> = {};
+    if (dto.firstName !== undefined) data.firstName = dto.firstName;
+    if (dto.middleName !== undefined) data.middleName = dto.middleName;
+    if (dto.lastName !== undefined) data.lastName = dto.lastName;
+    if (dto.email !== undefined) data.email = dto.email;
+    if (dto.address !== undefined) data.address = dto.address;
+    if (dto.sex !== undefined) data.sex = dto.sex;
+    if (dto.startingDate !== undefined)
+      data.startingDate = new Date(dto.startingDate);
+    if (dto.position !== undefined) data.position = dto.position;
+    if (dto.department !== undefined) data.department = dto.department;
+    return data;
+  }
+
+  private formatStaffResponse(
+    staff: Prisma.StaffGetPayload<{
+      include: { profile: { include: { user: true } } };
+    }>,
+  ) {
     return {
-      id: profile.id,
-      name: profile.name,
-      type: profile.type,
-      tenantId: profile.tenantId,
-      phoneNumber: profile.user?.phoneNumber,
-      userId: profile.user?.id,
-      staffId: profile.staff?.id,
-      firstName: profile.staff?.firstName,
-      middleName: profile.staff?.middleName,
-      lastName: profile.staff?.lastName,
-      email: profile.staff?.email,
-      address: profile.staff?.address,
-      sex: profile.staff?.sex,
-      startingDate: profile.staff?.startingDate,
-      position: profile.staff?.position,
-      department: profile.staff?.department,
-      verifiedAt: profile.staff?.verifiedAt,
-      createdAt: profile.createdAt,
+      id: staff.id,
+      staffId: staff.staffId,
+      firstName: staff.firstName,
+      middleName: staff.middleName,
+      lastName: staff.lastName,
+      email: staff.email,
+      address: staff.address,
+      sex: staff.sex,
+      startingDate: staff.startingDate,
+      position: staff.position,
+      department: staff.department,
+      verifiedAt: staff.verifiedAt,
+      tenantId: staff.tenantId,
+      phoneNumber: staff.profile?.user?.phoneNumber,
+      userId: staff.profile?.user?.id,
+      name: staff.profile?.name,
+      type: staff.profile?.type,
+      createdAt: staff.createdAt,
     };
   }
 }

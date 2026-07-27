@@ -4,12 +4,12 @@ enum ProfileType {
   Staff
   Parent
   Student
+  Registral
 }
 
 enum Sex {
   Male
   Female
-  Other
 }
 
 enum Position {

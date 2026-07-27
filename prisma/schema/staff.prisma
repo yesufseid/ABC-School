@@ -1,5 +1,6 @@
 model Staff {
   id           String    @id @default(uuid())
+  staffId      String    @unique @map("staff_id")
   firstName    String
   middleName   String?
   lastName     String
@@ -12,7 +13,6 @@ model Staff {
   verifiedAt   DateTime? @map("verified_at")
 
   tenantId String @map("tenant_id")
-  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   profileId String  @unique @map("profile_id")
   profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
