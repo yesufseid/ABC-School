@@ -28,15 +28,19 @@ export class CreateTenantDto {
   @IsNotEmpty()
   name: string;
 
+  @ApiProperty({ example: 'ADC' })
+  @IsString()
+  @IsNotEmpty()
+  branchCode: string;
+
   @ApiProperty({ example: 'A private K-12 school in Addis Ababa' })
   @IsString()
   @IsNotEmpty()
   description: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: { address: 'Bole Subcity', phone: '+251911223344' },
   })
-  @IsOptional()
   @IsObject()
-  details?: Record<string, string | number | boolean>;
+  details: Record<string, string | number | boolean>;
 }

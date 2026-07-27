@@ -2,6 +2,7 @@ model Tenant {
   id          String    @id @default(uuid())
   name        String
   description String
+  branchCode  String?   @unique @map("branch_code")
   details     Json?
   verifiedAt  DateTime? @map("verified_at")
 
@@ -22,10 +23,12 @@ model Profile {
   type ProfileType
 
   // relationships
-  userId   String  @unique @map("user_id")
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenantId String? @map("tenant_id")
-  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+  userId    String?   @unique @map("user_id")
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentId String?   @unique @map("student_id")
+  student   Student?  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  tenantId  String?   @map("tenant_id")
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id])
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")

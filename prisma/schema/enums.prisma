@@ -1,7 +1,22 @@
 enum ProfileType {
   Admin
   Owner
+  Registrar
   Staff
   Parent
   Student
+}
+
+enum StudentStatus {
+  ACTIVE
+  VERIFIED
+  WITHDRAWAL
+}
+enum Relationship {
+  FATHER
+  MOTHER
+  GUARDIAN
+  OTHER
+
+  @@map("relationships")
 }

@@ -1,0 +1,74 @@
+
+
+model Student {
+  id                  String        @id @default(uuid())
+  firstName           String        @map("first_name")
+  middleName          String       @map("middle_name")
+  lastName            String        @map("last_name")
+  studentId           String        @unique @map("student_id")
+  mustChangePassword  Boolean       @default(true) @map("must_change_password")
+  admissionDate       DateTime      @map("admission_date")
+  enrollmentDate      DateTime      @map("enrollment_date")
+  gradeOfInterest     String       @map("grade_of_interest")
+  sex                 String
+  address             String
+  nationality         String
+  previousSchool      String       @map("previous_school")
+  languagePreference  String       @map("language_preference")
+  password            String
+  phone               String?
+  status              StudentStatus @default(ACTIVE)
+
+  // relationships
+  parentLinks StudentParent[]
+  profile     Profile?
+
+  // timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("students")
+}
+
+model Parent {
+  id      String  @id @default(uuid())
+  name    String
+  sex      String
+  address    String
+  nationality         String
+  mustChangePassword  Boolean       @default(true) @map("must_change_password")
+
+  // relationships
+  userId   String         @unique @map("user_id")
+  user     User           @relation(fields: [userId], references: [id])
+  students StudentParent[]
+
+  // timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("parents")
+}
+
+model StudentIdCounter {
+  branchCode String
+  year       Int
+  lastSeq    Int    @default(0)
+
+  @@id([branchCode, year])
+  @@map("student_id_counters")
+}
+
+model StudentParent {
+  studentId    String  @map("student_id")
+  parentId     String  @map("parent_id")
+  relationship  Relationship
+  isPrimary    Boolean @default(true) @map("is_primary")
+
+  // relationships
+  student Student @relation(fields: [studentId], references: [id])
+  parent  Parent  @relation(fields: [parentId], references: [id])
+
+  @@id([studentId, parentId])
+  @@map("student_parents")
+}
