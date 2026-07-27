@@ -2,11 +2,11 @@ model Staff {
   id           String    @id @default(uuid())
   staffId      String    @unique @map("staff_id")
   firstName    String
-  middleName   String?
+  middleName   String
   lastName     String
   email        String?
-  address      String?
-  sex          Sex?
+  address      String
+  sex          Sex
   startingDate DateTime  @map("starting_date")
   position     Position
   department   Department?
