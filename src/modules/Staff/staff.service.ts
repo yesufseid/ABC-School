@@ -33,9 +33,9 @@ export class StaffService {
   async create(dto: CreateStaffDto) {
     const tenantId = this.getTenantId();
 
-    const branch = await this.db.tx.branch.findUnique({
+    const branch = await this.databaseService.getExtendedClient().branch.findUnique({
       where: { id: dto.branchId },
-      select: { branchCode: true, tenantId: true },
+      select: { branchPrefix: true, tenantId: true },
     });
 
     if (!branch) {
@@ -46,7 +46,7 @@ export class StaffService {
       throw new ConflictException('Branch does not belong to this tenant');
     }
 
-    const existingUser = await this.db.tx.user.findUnique({
+    const existingUser = await this.databaseService.getExtendedClient().user.findUnique({
       where: { phoneNumber: dto.phoneNumber },
     });
 
@@ -56,11 +56,11 @@ export class StaffService {
       );
     }
 
-    const count = await this.db.tx.staff.count({
+    const count = await this.databaseService.getExtendedClient().staff.count({
       where: { tenantId },
     });
 
-    const staffId = generateStaffId(branch.branchCode, new Date().getFullYear(), count + 1);
+    const staffId = generateStaffId(branch.branchPrefix, new Date().getFullYear(), count + 1);
     const rawPassword = generatePassword();
     const hashedPassword = await this.hashingService.hash(rawPassword);
 
@@ -79,35 +79,32 @@ export class StaffService {
             password: hashedPassword,
           },
         },
-        staff: {
-          create: {
-            staffId,
-            firstName: dto.firstName,
-            middleName: dto.middleName,
-            lastName: dto.lastName,
-            email: dto.email,
-            address: dto.address,
-            sex: dto.sex,
-            startingDate: new Date(dto.startingDate),
-            position: dto.position,
-            department: dto.department,
-            tenantId,
-            branchId: dto.branchId,
-          },
-        },
-      },
-      include: {
-        user: true,
-        staff: { include: { profile: { include: { user: true } } } },
       },
     });
 
-    return { data: { id: profile.staff!.id, password: rawPassword } };
+    const staff = await this.db.tx.staff.create({
+      data: {
+        staffId,
+        firstName: dto.firstName,
+        middleName: dto.middleName,
+        lastName: dto.lastName,
+        email: dto.email,
+        address: dto.address,
+        sex: dto.sex,
+        startingDate: new Date(dto.startingDate),
+        position: dto.position,
+        department: dto.department,
+        tenantId,
+        branchId: dto.branchId,
+        profileId: profile.id,
+      },
+    });
+
+    return { data: { id: staff.id, password: rawPassword } };
   }
 
   async findAll() {
-    const staffs = await this.databaseService.staff.findMany({
-      where: { tenantId: this.getTenantId() },
+    const staffs = await this.databaseService.getExtendedClient().staff.findMany({
       include: {
         profile: { include: { user: true } },
       },
@@ -118,8 +115,8 @@ export class StaffService {
   }
 
   async findOne(id: string) {
-    const staff = await this.databaseService.staff.findFirst({
-      where: { id, tenantId: this.getTenantId() },
+    const staff = await this.databaseService.getExtendedClient().staff.findFirst({
+      where: { id },
       include: {
         profile: { include: { user: true } },
       },
@@ -132,10 +129,9 @@ export class StaffService {
     return { data: this.formatStaffResponse(staff) };
   }
 
-  @Transactional()
   async update(id: string, dto: UpdateStaffDto) {
-    const staff = await this.databaseService.staff.findFirst({
-      where: { id, tenantId: this.getTenantId() },
+    const staff = await this.databaseService.getExtendedClient().staff.findFirst({
+      where: { id },
     });
 
     if (!staff) {
@@ -145,7 +141,7 @@ export class StaffService {
     const updateData = this.buildStaffUpdate(dto);
 
     if (Object.keys(updateData).length > 0) {
-      await this.db.tx.staff.update({
+      await this.databaseService.getExtendedClient().staff.update({
         where: { id },
         data: updateData,
       });
@@ -154,10 +150,9 @@ export class StaffService {
     return this.findOne(id);
   }
 
-  @Transactional()
   async remove(id: string) {
-    const staff = await this.databaseService.staff.findFirst({
-      where: { id, tenantId: this.getTenantId() },
+    const staff = await this.databaseService.getExtendedClient().staff.findFirst({
+      where: { id },
       include: { profile: { include: { user: true } } },
     });
 
@@ -165,7 +160,7 @@ export class StaffService {
       throw new NotFoundException('Staff not found');
     }
 
-    await this.db.tx.user.delete({
+    await this.databaseService.getExtendedClient().user.delete({
       where: { id: staff.profile.user.id },
     });
 
