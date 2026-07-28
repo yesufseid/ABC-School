@@ -73,12 +73,14 @@ export class StaffService {
         name: fullName,
         type: ProfileType.Staff,
         tenantId,
-        user: {
-          create: {
-            phoneNumber: dto.phoneNumber,
-            password: hashedPassword,
-          },
-        },
+        userId: (
+          await this.db.tx.user.create({
+            data: {
+              phoneNumber: dto.phoneNumber,
+              password: hashedPassword,
+            },
+          })
+        ).id,
       },
     });
 
