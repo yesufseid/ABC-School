@@ -11,6 +11,7 @@ import { AppGuard } from './modules/auth/guards/app.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { SubscriptionGuard } from './modules/auth/guards/subscription.guard';
 import { SlackExceptionFilter } from './common/filters/slack-exception.filter';
+import { FileModule } from './modules/file/file.module';
 
 // TODO: refactor config module and transactional db setup
 @Module({
@@ -36,6 +37,8 @@ import { SlackExceptionFilter } from './common/filters/slack-exception.filter';
     }),
 
     DatabaseModule,
+    FileModule,
+
     FeatureModule,
   ],
 
