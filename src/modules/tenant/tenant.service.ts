@@ -28,10 +28,19 @@ export class TenantService {
   @Transactional()
   async create(dto: CreateTenantDto) {
     // Todo: change this check into a global exception filter or module specific exception filter
-    const user = await this.findOwner(dto.ownerPhone);
+    const [user, tenant] = await Promise.all([
+      this.findOwner(dto.ownerPhone),
+      this.db.tx.tenant.findUnique({
+        where: { branchPrefix: dto.branchPrefix },
+      }),
+    ]);
 
     if (user) {
       throw new ConflictException(`School owner exists with this phone`);
+    }
+
+    if (tenant) {
+      throw new ConflictException(`Branch prefix in use`);
     }
 
     await this.db.tx.user.create({
@@ -46,6 +55,8 @@ export class TenantService {
               create: {
                 name: dto.name,
                 description: dto.description,
+                branchCode: dto.branchCode,
+                branchPrefix: dto.branchPrefix,
                 details: dto.details,
               },
             },
@@ -190,6 +201,8 @@ export class TenantService {
                   data: {
                     name: dto.name,
                     description: dto.description,
+                    branchCode: dto.branchCode,
+                    branchPrefix: dto.branchPrefix,
                     details: dto.details,
                   },
                 },
