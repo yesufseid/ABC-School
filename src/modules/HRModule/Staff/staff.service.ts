@@ -1,18 +1,17 @@
+import { ClsService } from 'nestjs-cls';
 import { Transactional, TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import {
   ConflictException,
-  ForbiddenException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import { HashingService } from '../../auth/hashing.service';
+import { REQUEST_TENANT_ID } from '../../auth/auth.constants';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
 import { CreateStaffDto } from './dtos/create-staff.dto';
 import { UpdateStaffDto } from './dtos/update-staff.dto';
-import { TokenPayload } from 'src/modules/auth/auth.types';
 import {
   generatePassword,
   generateStaffId,
@@ -21,9 +20,8 @@ import { Prisma } from 'prisma/src/generated/prisma/client';
 
 @Injectable()
 export class StaffService {
-  private readonly logger = new Logger(StaffService.name);
-
   constructor(
+    private readonly cls: ClsService,
     private readonly db: TransactionHost<
       TransactionalAdapterPrisma<DatabaseService>
     >,
@@ -32,8 +30,8 @@ export class StaffService {
   ) {}
 
   @Transactional()
-  async create(dto: CreateStaffDto, user: TokenPayload) {
-    const tenantId = this.resolveTenantId(user);
+  async create(dto: CreateStaffDto) {
+    const tenantId = this.getTenantId();
 
     const tenant = await this.db.tx.tenant.findUnique({
       where: { id: tenantId },
@@ -101,22 +99,12 @@ export class StaffService {
       },
     });
 
-    this.logger.log(
-      `Staff [${staffId}] phone: ${dto.phoneNumber} temporary password: ${rawPassword}`,
-    );
-
-    return { data: this.formatStaffResponse(profile.staff!) };
+    return { data: { id: profile.staff!.id, password: rawPassword } };
   }
 
-  async findAll(user: TokenPayload) {
-    const where: Prisma.StaffWhereInput = {};
-
-    if (user.type !== ProfileType.Admin) {
-      where.tenantId = user.tenantId!;
-    }
-
+  async findAll() {
     const staffs = await this.databaseService.staff.findMany({
-      where,
+      where: { tenantId: this.getTenantId() },
       include: {
         profile: { include: { user: true } },
       },
@@ -126,9 +114,9 @@ export class StaffService {
     return { data: staffs.map((s) => this.formatStaffResponse(s)) };
   }
 
-  async findOne(id: string, user: TokenPayload) {
-    const staff = await this.databaseService.staff.findUnique({
-      where: { id },
+  async findOne(id: string) {
+    const staff = await this.databaseService.staff.findFirst({
+      where: { id, tenantId: this.getTenantId() },
       include: {
         profile: { include: { user: true } },
       },
@@ -138,31 +126,17 @@ export class StaffService {
       throw new NotFoundException('Staff not found');
     }
 
-    if (
-      user.type !== ProfileType.Admin &&
-      staff.tenantId !== user.tenantId
-    ) {
-      throw new ForbiddenException('Access denied');
-    }
-
     return { data: this.formatStaffResponse(staff) };
   }
 
   @Transactional()
-  async update(id: string, dto: UpdateStaffDto, user: TokenPayload) {
-    const staff = await this.databaseService.staff.findUnique({
-      where: { id },
+  async update(id: string, dto: UpdateStaffDto) {
+    const staff = await this.databaseService.staff.findFirst({
+      where: { id, tenantId: this.getTenantId() },
     });
 
     if (!staff) {
       throw new NotFoundException('Staff not found');
-    }
-
-    if (
-      user.type !== ProfileType.Admin &&
-      staff.tenantId !== user.tenantId
-    ) {
-      throw new ForbiddenException('Access denied');
     }
 
     const updateData = this.buildStaffUpdate(dto);
@@ -174,13 +148,13 @@ export class StaffService {
       });
     }
 
-    return this.findOne(id, user);
+    return this.findOne(id);
   }
 
   @Transactional()
-  async remove(id: string, user: TokenPayload) {
-    const staff = await this.databaseService.staff.findUnique({
-      where: { id },
+  async remove(id: string) {
+    const staff = await this.databaseService.staff.findFirst({
+      where: { id, tenantId: this.getTenantId() },
       include: { profile: { include: { user: true } } },
     });
 
@@ -188,26 +162,15 @@ export class StaffService {
       throw new NotFoundException('Staff not found');
     }
 
-    if (
-      user.type !== ProfileType.Admin &&
-      staff.tenantId !== user.tenantId
-    ) {
-      throw new ForbiddenException('Access denied');
-    }
-
     await this.db.tx.user.delete({
-      where: { id: staff.profile.user!.id },
+      where: { id: staff.profile.user.id },
     });
 
     return { message: 'Staff removed successfully' };
   }
 
-  private resolveTenantId(user: TokenPayload): string {
-    if (!user.tenantId) {
-      throw new ForbiddenException('Access denied');
-    }
-
-    return user.tenantId;
+  private getTenantId(): string {
+    return this.cls.get<string>(REQUEST_TENANT_ID)!;
   }
 
   private buildStaffUpdate(dto: UpdateStaffDto) {
@@ -244,8 +207,8 @@ export class StaffService {
       department: staff.department,
       verifiedAt: staff.verifiedAt,
       tenantId: staff.tenantId,
-      phoneNumber: staff.profile?.user?.phoneNumber,
-      userId: staff.profile?.user?.id,
+      phoneNumber: staff.profile.user.phoneNumber,
+      userId: staff.profile.user.id,
       name: staff.profile?.name,
       type: staff.profile?.type,
       createdAt: staff.createdAt,

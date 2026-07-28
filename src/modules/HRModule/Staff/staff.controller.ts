@@ -9,43 +9,40 @@ import {
 } from '@nestjs/common';
 import { StaffService } from './staff.service';
 import { Roles } from '../../auth/decorators/roles.decorator';
-import { User } from '../../auth/decorators/user.decorator';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
-import { TokenPayload } from 'src/modules/auth/auth.types';
 import { CreateStaffDto } from './dtos/create-staff.dto';
 import { UpdateStaffDto } from './dtos/update-staff.dto';
 
 @Roles(ProfileType.Owner, ProfileType.Registral)
-@Controller('registral/staff')
+@Controller('staff')
 export class StaffController {
   constructor(private readonly staffService: StaffService) {}
 
   @Post()
-  create(@Body() dto: CreateStaffDto, @User() user: TokenPayload) {
-    return this.staffService.create(dto, user);
+  create(@Body() dto: CreateStaffDto) {
+    return this.staffService.create(dto);
   }
 
   @Get()
-  findAll(@User() user: TokenPayload) {
-    return this.staffService.findAll(user);
+  findAll() {
+    return this.staffService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @User() user: TokenPayload) {
-    return this.staffService.findOne(id, user);
+  findOne(@Param('id') id: string) {
+    return this.staffService.findOne(id);
   }
 
   @Patch(':id')
   update(
     @Param('id') id: string,
     @Body() dto: UpdateStaffDto,
-    @User() user: TokenPayload,
   ) {
-    return this.staffService.update(id, dto, user);
+    return this.staffService.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @User() user: TokenPayload) {
-    return this.staffService.remove(id, user);
+  remove(@Param('id') id: string) {
+    return this.staffService.remove(id);
   }
 }

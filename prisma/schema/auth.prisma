@@ -3,9 +3,6 @@ model User {
   phoneNumber String @unique @map("phone_number")
   password    String
 
-  profileId String  @unique @map("profile_id")
-  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

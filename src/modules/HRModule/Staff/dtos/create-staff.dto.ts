@@ -40,10 +40,9 @@ export class CreateStaffDto {
   @IsString()
   address?: string;
 
-  @ApiPropertyOptional({ enum: Sex })
-  @IsOptional()
+  @ApiProperty({ enum: Sex })
   @IsEnum(Sex)
-  sex?: Sex;
+  sex: Sex;
 
   @ApiProperty({ example: '2025-09-01' })
   @IsDateString()

@@ -2,11 +2,12 @@ model Tenant {
   id          String    @id @default(uuid())
   name        String
   description String
-  branchCode  String?   @unique @map("branch_code")
+  branchCode  String    @unique @map("branch_code")
   details     Json?
   verifiedAt  DateTime? @map("verified_at")
 
   members Profile[]
+  staffs  Staff[]
 
   createdAt           DateTime             @default(now()) @map("created_at")
   updatedAt           DateTime             @updatedAt @map("updated_at")
@@ -23,8 +24,9 @@ model Profile {
   tenantId String? @map("tenant_id")
   tenant   Tenant? @relation(fields: [tenantId], references: [id])
 
-  user  User?
-  staff Staff?
+  userId String  @unique @map("user_id")
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  staff  Staff?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
