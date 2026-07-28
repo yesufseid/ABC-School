@@ -25,7 +25,6 @@ model Staff {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([id, tenantId, branchId])
-  @@index([tenantId])
-  @@index([branchId])
+  @@index([tenantId,branchId])
   @@map("staffs")
 }
