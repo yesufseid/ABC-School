@@ -3,7 +3,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
-import { StaffModule } from './modules/HRModule/Staff/staff.module';
+import { StaffModule } from './modules/Staff/staff.module';
 
 @Module({
   imports: [

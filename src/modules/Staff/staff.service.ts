@@ -6,9 +6,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
-import { HashingService } from '../../auth/hashing.service';
-import { REQUEST_TENANT_ID } from '../../auth/auth.constants';
+import { DatabaseService } from '../database/database.service';
+import { HashingService } from '../auth/hashing.service';
+import { REQUEST_TENANT_ID } from '../auth/auth.constants';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
 import { CreateStaffDto } from './dtos/create-staff.dto';
 import { UpdateStaffDto } from './dtos/update-staff.dto';

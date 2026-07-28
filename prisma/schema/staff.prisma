@@ -1,9 +1,9 @@
 model Staff {
   id           String    @id @default(uuid())
   staffId      String    @unique @map("staff_id")
-  firstName    String
-  middleName   String
-  lastName     String
+  firstName     String    @map("first_name")
+  middleName    String    @map("middle_name")
+  lastName      String    @map("last_name")
   email        String? @unique
   address      String
   sex          Sex

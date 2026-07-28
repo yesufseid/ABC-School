@@ -8,7 +8,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { StaffService } from './staff.service';
-import { Roles } from '../../auth/decorators/roles.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
 import { CreateStaffDto } from './dtos/create-staff.dto';
 import { UpdateStaffDto } from './dtos/update-staff.dto';
