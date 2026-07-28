@@ -69,7 +69,9 @@ describe('TenantController (integration)', () => {
 
     it('should return 409 when owner phone already exists', async () => {
       const { token } = await seedAndLogin(prisma, app, ProfileType.Admin);
-      const dto = buildCreateTenantDto({ ownerPhone: '+251988888888' });
+      const dto = buildCreateTenantDto({
+        ownerPhone: '+251988888888',
+      });
 
       await http
         .post('/api/v1/tenant')
@@ -80,7 +82,10 @@ describe('TenantController (integration)', () => {
       await http
         .post('/api/v1/tenant')
         .set('Authorization', `Bearer ${token}`)
-        .send(dto)
+        .send({
+          ...dto,
+          branchPrefix: 'NEW2',
+        })
         .expect(409);
     });
 
@@ -208,7 +213,7 @@ describe('TenantController (integration)', () => {
     it('should return 201 when admin subscribes a tenant', async () => {
       const { token } = await seedAndLogin(prisma, app, ProfileType.Admin);
 
-      const subResponse = await http
+      await http
         .post('/api/v1/subscription')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -231,7 +236,6 @@ describe('TenantController (integration)', () => {
         .expect(200);
 
       const tenantId = listResponse.body.data[0].id;
-      const subscriptionId = listResponse.body.data[0].id;
 
       const planListResponse = await http
         .get('/api/v1/subscription')

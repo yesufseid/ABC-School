@@ -27,14 +27,31 @@ export class TenantService {
 
   @Transactional()
   async create(dto: CreateTenantDto) {
-    // Todo: change this check into a global exception filter or module specific exception filter
-    const user = await this.findOwner(dto.ownerPhone);
+    const [user] = await Promise.all([this.findOwner(dto.ownerPhone)]);
 
     if (user) {
       throw new ConflictException(`School owner exists with this phone`);
     }
 
-    await this.db.tx.user.create({
+    if (dto.branches?.length) {
+      const prefixChecks = await Promise.all(
+        dto.branches.map((branch) =>
+          this.db.tx.branch.findFirst({
+            where: { branchPrefix: branch.branchPrefix },
+            select: { id: true },
+          }),
+        ),
+      );
+
+      const existingIndex = prefixChecks.findIndex((result) => result !== null);
+      if (existingIndex !== -1) {
+        throw new ConflictException(
+          `Branch prefix "${dto.branches[existingIndex].branchPrefix}" already exists`,
+        );
+      }
+    }
+
+    const userResult = await this.db.tx.user.create({
       data: {
         phoneNumber: dto.ownerPhone,
         password: await this.hashingService.hash(dto.password),
@@ -47,15 +64,43 @@ export class TenantService {
                 name: dto.name,
                 description: dto.description,
                 details: dto.details,
-                branchCode: dto.branchCode,
+                branches: dto.branches?.length
+                  ? {
+                      create: dto.branches.map(
+                        ({
+                          name,
+                          description,
+                          branchCode,
+                          branchPrefix,
+                          details,
+                        }) => ({
+                          name,
+                          description,
+                          branchCode,
+                          branchPrefix,
+                          details,
+                        }),
+                      ),
+                    }
+                  : undefined,
               },
             },
           },
         },
       },
+      include: {
+        profile: {
+          include: {
+            tenant: true,
+          },
+        },
+      },
     });
 
-    return { message: 'Registered School Successfully!' };
+    return {
+      message: 'Registered School Successfully!',
+      tenantId: userResult.profile.tenant.id,
+    };
   }
 
   async findAll() {
@@ -192,7 +237,6 @@ export class TenantService {
                     name: dto.name,
                     description: dto.description,
                     details: dto.details,
-                    branchCode: dto.branchCode,
                   },
                 },
               },

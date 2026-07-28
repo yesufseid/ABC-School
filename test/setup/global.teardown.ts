@@ -9,9 +9,7 @@ export default async function globalTeardown() {
   }
 
   try {
-    await execAsync(
-      'npx prisma db push --force-reset --accept-data-loss',
-    );
+    await execAsync('npx prisma db push --force-reset --accept-data-loss');
     console.log('Test database reset');
   } catch (error) {
     console.error('Failed to reset test database:', error);

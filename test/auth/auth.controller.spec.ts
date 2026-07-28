@@ -80,7 +80,9 @@ describe('AuthController (integration)', () => {
     it('should return 404 for non-existent phone number', async () => {
       const response = await http
         .post('/api/v1/auth/login')
-        .send(buildLoginDto({ phoneNumber: '+251999999999', password: 'anything' }))
+        .send(
+          buildLoginDto({ phoneNumber: '+251999999999', password: 'anything' }),
+        )
         .expect(404);
 
       expect(response.body.message).toBe('User not found');

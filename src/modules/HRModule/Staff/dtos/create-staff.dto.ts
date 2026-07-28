@@ -15,6 +15,11 @@ export class CreateStaffDto {
   @IsPhoneNumber()
   phoneNumber: string;
 
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  branchId: string;
+
   @ApiProperty({ example: 'Abebe' })
   @IsString()
   @IsNotEmpty()

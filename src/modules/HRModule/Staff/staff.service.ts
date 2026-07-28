@@ -33,15 +33,17 @@ export class StaffService {
   async create(dto: CreateStaffDto) {
     const tenantId = this.getTenantId();
 
-    const tenant = await this.db.tx.tenant.findUnique({
-      where: { id: tenantId },
-      select: { branchCode: true },
+    const branch = await this.db.tx.branch.findUnique({
+      where: { id: dto.branchId },
+      select: { branchCode: true, tenantId: true },
     });
 
-    if (!tenant?.branchCode) {
-      throw new ConflictException(
-        'Tenant branch code is not configured. Set a branch code first.',
-      );
+    if (!branch) {
+      throw new NotFoundException('Branch not found');
+    }
+
+    if (branch.tenantId !== tenantId) {
+      throw new ConflictException('Branch does not belong to this tenant');
     }
 
     const existingUser = await this.db.tx.user.findUnique({
@@ -58,7 +60,7 @@ export class StaffService {
       where: { tenantId },
     });
 
-    const staffId = generateStaffId(tenant.branchCode, new Date().getFullYear(), count + 1);
+    const staffId = generateStaffId(branch.branchCode, new Date().getFullYear(), count + 1);
     const rawPassword = generatePassword();
     const hashedPassword = await this.hashingService.hash(rawPassword);
 
@@ -90,6 +92,7 @@ export class StaffService {
             position: dto.position,
             department: dto.department,
             tenantId,
+            branchId: dto.branchId,
           },
         },
       },

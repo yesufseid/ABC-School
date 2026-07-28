@@ -1,0 +1,62 @@
+model Student {
+  id            String    @id @default(uuid())
+  firstName     String    @map("first_name")
+  middleName    String    @map("middle_name")
+  lastName      String    @map("last_name")
+  dateOfBirth   DateTime  @map("date_of_birth")
+  startingGrade Int       @map("starting_grade")
+  enrolled      Boolean   @default(false)
+  verifiedAt    DateTime?
+
+  profileId String          @unique @map("profile_id")
+  profile   Profile         @relation(fields: [profileId], references: [id])
+  tenantId  String          @map("tenant_id")
+  tenant    Tenant          @relation(fields: [tenantId], references: [id])
+  parents   StudentParent[]
+  grades    StudentGrade[]
+
+  // timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("students")
+}
+
+model StudentGrade {
+  id          String @id @default(uuid())
+  grade       Int
+  section     String
+  year        String
+  studentCode String @map("student_code")
+
+  studentId String  @map("student_id")
+  student   Student @relation(fields: [studentId], references: [id])
+  branchId  String  @map("branch_id")
+  branch    Branch  @relation(fields: [branchId], references: [id])
+
+  // timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([studentId, grade])
+  @@index([studentId])
+  @@map("student_grades")
+}
+
+model StudentParent {
+  id       String                @id @default(uuid())
+  relation StudentParentRelation
+
+  studentId String  @map("student_id")
+  student   Student @relation(fields: [studentId], references: [id])
+  parentId  String  @map("parent_id")
+  parent    Parent  @relation(fields: [parentId], references: [id])
+
+  // timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([studentId, parentId])
+  @@index([studentId])
+  @@map("students_parents")
+}

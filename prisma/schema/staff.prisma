@@ -15,13 +15,17 @@ model Staff {
   tenantId String          @map("tenant_id")
   tenant   Tenant          @relation(fields: [tenantId], references: [id])
 
+  branchId String          @map("branch_id")
+  branch   Branch          @relation(fields: [branchId], references: [id])
+
   profileId String  @unique @map("profile_id")
   profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([id, tenantId])
+  @@unique([id, tenantId, branchId])
   @@index([tenantId])
+  @@index([branchId])
   @@map("staffs")
 }

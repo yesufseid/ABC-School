@@ -32,3 +32,10 @@ enum Department {
   IT
   Other
 }
+
+enum StudentParentRelation {
+  Father
+  Mother
+  Guardian
+  Other
+}

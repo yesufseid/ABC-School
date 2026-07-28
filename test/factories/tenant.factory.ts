@@ -7,6 +7,13 @@ export function buildCreateTenantDto(
     password?: string;
     name?: string;
     description?: string;
+    branches?: Array<{
+      name: string;
+      description: string;
+      branchCode: string;
+      branchPrefix: string;
+      details: Record<string, string | number | boolean>;
+    }>;
   } = {},
 ) {
   counter++;
@@ -16,6 +23,7 @@ export function buildCreateTenantDto(
     password: 'tenant123',
     name: `Test School ${counter}`,
     description: `A test school ${counter}`,
+    details: {},
     ...overrides,
   };
 }
