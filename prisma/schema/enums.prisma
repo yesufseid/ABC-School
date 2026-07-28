@@ -5,3 +5,10 @@ enum ProfileType {
   Parent
   Student
 }
+
+enum StudentParentRelation {
+  Father
+  Mother
+  Guardian
+  Other
+}
