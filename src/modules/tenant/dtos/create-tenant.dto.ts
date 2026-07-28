@@ -1,8 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import {
   IsNotEmpty,
   IsObject,
-  IsOptional,
   IsPhoneNumber,
   IsString,
   MinLength,
@@ -33,10 +32,19 @@ export class CreateTenantDto {
   @IsNotEmpty()
   description: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({ example: 'CRZ' })
+  @IsString()
+  @IsNotEmpty()
+  branchCode: string;
+
+  @ApiProperty({ example: 'CRZ' })
+  @IsString()
+  @IsNotEmpty()
+  branchPrefix: string;
+
+  @ApiProperty({
     example: { address: 'Bole Subcity', phone: '+251911223344' },
   })
-  @IsOptional()
   @IsObject()
-  details?: Record<string, string | number | boolean>;
+  details: Record<string, string | number | boolean>;
 }

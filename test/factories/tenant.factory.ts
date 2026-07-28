@@ -7,6 +7,8 @@ export function buildCreateTenantDto(
     password?: string;
     name?: string;
     description?: string;
+    branchCode?: string;
+    branchPrefix?: string;
   } = {},
 ) {
   counter++;
@@ -16,6 +18,9 @@ export function buildCreateTenantDto(
     password: 'tenant123',
     name: `Test School ${counter}`,
     description: `A test school ${counter}`,
+    branchCode: 'CRZ',
+    branchPrefix: 'CRZ',
+    details: {},
     ...overrides,
   };
 }
