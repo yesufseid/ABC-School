@@ -1,21 +1,44 @@
 model Tenant {
-  id           String    @id @default(uuid())
+  id          String    @id @default(uuid())
+  name        String
+  description String
+  details     Json
+  verifiedAt  DateTime? @map("verified_at")
+
+  // relationships
+  members             Profile[]
+  tenantSubscriptions TenantSubscription[]
+  braches             Branch[]
+  students            Student[]
+  parents             Parent[]
+
+  // timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tenants")
+}
+
+model Branch {
+  id           String @id @default(uuid())
   name         String
   description  String
   details      Json
-  branchCode   String    @map("branch_code")
-  branchPrefix String    @unique @map("branch_prefix")
-  verifiedAt   DateTime? @map("verified_at")
+  branchCode   String @map("branch_code")
+  branchPrefix String @unique @map("branch_prefix")
 
   // relationships
-  members Profile[]
+  tenantId String         @map("tenant_id")
+  tenant   Tenant         @relation(fields: [tenantId], references: [id])
+  students StudentGrade[]
 
   // timestamps
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
-  tenantSubscriptions TenantSubscription[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@map("tenants")
+  @@unique([tenantId, branchCode])
+  @@index([tenantId])
+  @@map("branches")
 }
 
 model Profile {
@@ -24,10 +47,12 @@ model Profile {
   type ProfileType
 
   // relationships
-  userId   String  @unique @map("user_id")
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenantId String? @map("tenant_id")
-  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+  userId   String   @unique @map("user_id")
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId String?  @map("tenant_id")
+  tenant   Tenant?  @relation(fields: [tenantId], references: [id])
+  students Student?
+  parents  Parent?
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")

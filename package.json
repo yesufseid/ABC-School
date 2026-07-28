@@ -22,6 +22,7 @@
     "test:integration:watch": "jest --config test/jest-e2e.json --watch --runInBand",
     "test:integration:auth": "jest --config test/jest-e2e.json --testPathPattern=\"auth\" --runInBand",
     "test:integration:tenant": "jest --config test/jest-e2e.json --testPathPattern=\"tenant\" --runInBand",
+    "test:integration:branch": "jest --config test/jest-e2e.json --testPathPattern=\"branch\" --runInBand",
     "test:integration:subscription": "jest --config test/jest-e2e.json --testPathPattern=\"subscription\" --runInBand",
     "db:push": "npx prisma db push --schema=./prisma/schema",
     "db:generate": "npx prisma generate --schema=./prisma/schema",

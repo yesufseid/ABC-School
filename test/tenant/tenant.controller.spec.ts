@@ -71,8 +71,6 @@ describe('TenantController (integration)', () => {
       const { token } = await seedAndLogin(prisma, app, ProfileType.Admin);
       const dto = buildCreateTenantDto({
         ownerPhone: '+251988888888',
-        branchCode: 'NEW',
-        branchPrefix: 'NEW',
       });
 
       await http
@@ -87,30 +85,6 @@ describe('TenantController (integration)', () => {
         .send({
           ...dto,
           branchPrefix: 'NEW2',
-        })
-        .expect(409);
-    });
-
-    it('should return 409 when branch already prefix exists', async () => {
-      const { token } = await seedAndLogin(prisma, app, ProfileType.Admin);
-      const dto = buildCreateTenantDto({
-        ownerPhone: '+251919283746',
-        branchCode: 'DUPLICATE',
-        branchPrefix: 'DUPLICATE',
-      });
-
-      await http
-        .post('/api/v1/tenant')
-        .set('Authorization', `Bearer ${token}`)
-        .send(dto)
-        .expect(201);
-
-      await http
-        .post('/api/v1/tenant')
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          ...dto,
-          ownerPhone: '+251991827364',
         })
         .expect(409);
     });
