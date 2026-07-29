@@ -36,6 +36,7 @@ model Branch {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@unique([id, tenantId])
   @@unique([tenantId, branchCode])
   @@index([tenantId])
   @@map("branches")
@@ -57,7 +58,7 @@ model Profile {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([tenantId])
+  @@unique([id, tenantId])
   @@index([tenantId])
   @@map("profiles")
 }

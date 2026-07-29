@@ -38,14 +38,6 @@ export class StaffService {
       select: { branchPrefix: true, tenantId: true },
     });
 
-    if (!branch) {
-      throw new NotFoundException('Branch not found');
-    }
-
-    if (branch.tenantId !== tenantId) {
-      throw new ConflictException('Branch does not belong to this tenant');
-    }
-
     const existingUser = await this.db.tx.user.findUnique({
       where: { phoneNumber: dto.phoneNumber },
     });
@@ -106,7 +98,7 @@ export class StaffService {
   }
 
   async findAll() {
-    const staffs = await this.databaseService.getExtendedClient().staff.findMany({
+    const staffs = await this.databaseService.staff.findMany({
       include: {
         profile: { include: { user: true } },
       },
@@ -117,7 +109,7 @@ export class StaffService {
   }
 
   async findOne(id: string) {
-    const staff = await this.databaseService.getExtendedClient().staff.findFirst({
+    const staff = await this.databaseService.staff.findFirst({
       where: { id },
       include: {
         profile: { include: { user: true } },
