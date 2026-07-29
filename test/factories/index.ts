@@ -5,3 +5,4 @@ export {
 } from './tenant.factory';
 export { buildCreateSubscriptionDto } from './subscription.factory';
 export { buildCreateBranchDto } from './branch.factory';
+export { buildCreateStaffDto } from './staff.factory';

@@ -64,7 +64,7 @@ export class TenantService {
                 name: dto.name,
                 description: dto.description,
                 details: dto.details,
-                braches: dto.branches?.length
+                branches: dto.branches?.length
                   ? {
                       create: dto.branches.map(
                         ({

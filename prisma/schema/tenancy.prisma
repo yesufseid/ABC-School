@@ -5,14 +5,13 @@ model Tenant {
   details     Json
   verifiedAt  DateTime? @map("verified_at")
 
-  // relationships
   members             Profile[]
   tenantSubscriptions TenantSubscription[]
-  braches             Branch[]
+  branches            Branch[]
   students            Student[]
   parents             Parent[]
+  staffs              Staff[]
 
-  // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -31,6 +30,7 @@ model Branch {
   tenantId String         @map("tenant_id")
   tenant   Tenant         @relation(fields: [tenantId], references: [id])
   students StudentGrade[]
+  staffs   Staff[]
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -46,20 +46,18 @@ model Profile {
   name String
   type ProfileType
 
-  // relationships
   userId   String   @unique @map("user_id")
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenantId String?  @map("tenant_id")
   tenant   Tenant?  @relation(fields: [tenantId], references: [id])
   students Student?
   parents  Parent?
+  staff    Staff?
 
-  // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([id, tenantId])
-  @@index(fields: [tenantId])
-  @@index(fields: [userId])
+  @@unique([tenantId])
+  @@index([tenantId])
   @@map("profiles")
 }

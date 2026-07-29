@@ -2,8 +2,8 @@ model User {
   id          String @id @default(uuid())
   phoneNumber String @unique @map("phone_number")
   password    String
-
-  // relationships
+ 
+ // relationships
   profile Profile?
 
   // timestamps
