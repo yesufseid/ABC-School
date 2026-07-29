@@ -174,4 +174,96 @@ describe('StaffController (integration)', () => {
         .expect(409);
     });
   });
+
+  describe('GET /api/v1/staff', () => {
+    it('should only return staff belonging to the current tenant', async () => {
+      const tenantA = await seedTenantAndLogin(prisma, app, ProfileType.Owner);
+      const dtoA1 = buildCreateStaffDto({ branchId: tenantA.branchId });
+      const dtoA2 = buildCreateStaffDto({ branchId: tenantA.branchId });
+
+      const resA1 = await http
+        .post('/api/v1/staff')
+        .set('Authorization', `Bearer ${tenantA.token}`)
+        .send(dtoA1)
+        .expect(201);
+      const resA2 = await http
+        .post('/api/v1/staff')
+        .set('Authorization', `Bearer ${tenantA.token}`)
+        .send(dtoA2)
+        .expect(201);
+
+      const tenantB = await seedTenantAndLogin(prisma, app, ProfileType.Owner);
+      const dtoB1 = buildCreateStaffDto({ branchId: tenantB.branchId });
+
+      const resB1 = await http
+        .post('/api/v1/staff')
+        .set('Authorization', `Bearer ${tenantB.token}`)
+        .send(dtoB1)
+        .expect(201);
+
+      const responseA = await http
+        .get('/api/v1/staff')
+        .set('Authorization', `Bearer ${tenantA.token}`)
+        .expect(200);
+
+      expect(responseA.body.data).toHaveLength(2);
+      expect(responseA.body.data.map((s: { id: string }) => s.id)).toEqual(
+        expect.arrayContaining([resA1.body.data.id, resA2.body.data.id]),
+      );
+
+      const responseB = await http
+        .get('/api/v1/staff')
+        .set('Authorization', `Bearer ${tenantB.token}`)
+        .expect(200);
+
+      expect(responseB.body.data).toHaveLength(1);
+      expect(responseB.body.data[0].id).toBe(resB1.body.data.id);
+    });
+  });
+
+  describe('GET /api/v1/staff/:id', () => {
+    it('should return staff when it belongs to the current tenant', async () => {
+      const { token, branchId } = await seedTenantAndLogin(prisma, app, ProfileType.Owner);
+      const dto = buildCreateStaffDto({ branchId });
+
+      const createRes = await http
+        .post('/api/v1/staff')
+        .set('Authorization', `Bearer ${token}`)
+        .send(dto)
+        .expect(201);
+
+      const staffId = createRes.body.data.id;
+
+      const res = await http
+        .get(`/api/v1/staff/${staffId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.data.id).toBe(staffId);
+    });
+
+    it('should return 404 when staff belongs to a different tenant', async () => {
+      const { token: tokenA, branchId: branchIdA } = await seedTenantAndLogin(
+        prisma, app, ProfileType.Owner,
+      );
+      const dto = buildCreateStaffDto({ branchId: branchIdA });
+
+      const createRes = await http
+        .post('/api/v1/staff')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .send(dto)
+        .expect(201);
+
+      const staffId = createRes.body.data.id;
+
+      const { token: tokenB } = await seedTenantAndLogin(
+        prisma, app, ProfileType.Owner,
+      );
+
+      await http
+        .get(`/api/v1/staff/${staffId}`)
+        .set('Authorization', `Bearer ${tokenB}`)
+        .expect(404);
+    });
+  });
 });

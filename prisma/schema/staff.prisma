@@ -1,6 +1,6 @@
 model Staff {
   id           String    @id @default(uuid())
-  staffId      String    @unique @map("staff_id")
+  staffId      String    @map("staff_id")
   firstName     String    @map("first_name")
   middleName    String    @map("middle_name")
   lastName      String    @map("last_name")
@@ -24,7 +24,8 @@ model Staff {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([id, tenantId, branchId])
-  @@index([tenantId,branchId])
+  @@unique([staffId, tenantId])
+  @@index([tenantId])
+  @@index([branchId])
   @@map("staffs")
 }
