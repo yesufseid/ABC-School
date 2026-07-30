@@ -16,6 +16,10 @@ import {
 import { CreateStudentDto } from './dtos/create-student.dto';
 import { UpdateStudentDto } from './dtos/update-student.dto';
 import { ReAdmitDto } from './dtos/re-admit.dto';
+import { CreateSectionDto } from './dtos/create-section.dto';
+import { UpdateSectionDto } from './dtos/update-section.dto';
+import { AssignSectionDto } from './dtos/assign-section.dto';
+import { AutoAssignSectionDto, AutoAssignMode } from './dtos/auto-assign-section.dto';
 import { formatStudentId, generatePassword } from '../../common/helpers/generator.helper';
 
 @Injectable()
@@ -206,16 +210,24 @@ export class RegistrationService {
     await this.db.tx.student.update({ where: { id }, data: updateData });
 
     if (dto.branchId) {
-      await this.db.tx.studentGrade.create({
-        data: {
-          grade: dto.startingGrade ?? student.startingGrade,
-          section: 'A',
-          year: String(new Date().getFullYear()),
-          studentCode: student.studentId,
-          student: { connect: { id } },
-          branch: { connect: { id: dto.branchId } },
-        },
-      });
+      let sectionId = dto.sectionId;
+      if (!sectionId) {
+        const section = await this.db.tx.section.findFirst({
+          where: { branchId: dto.branchId, year: String(new Date().getFullYear()), tenantId },
+        });
+        if (section) sectionId = section.id;
+      }
+
+      const data: any = {
+        grade: dto.startingGrade ?? student.startingGrade,
+        year: String(new Date().getFullYear()),
+        studentCode: student.studentId,
+        studentId: id,
+        branchId: dto.branchId,
+      };
+      if (sectionId) data.sectionId = sectionId;
+
+      await this.db.tx.studentGrade.create({ data });
     }
 
     this.logger.log(`Student [${student.studentId}] re-admitted, scenario: ${dto.scenario}`);
@@ -348,5 +360,352 @@ export class RegistrationService {
     this.logger.log(
       `Parent [${parentLink.phoneNumber}] created, password: ${parentPassword}`,
     );
+  }
+
+  // --- Section management ---
+
+  @Transactional()
+  async createSection(dto: CreateSectionDto, tenantId: string) {
+    const grade = await this.db.tx.grade.findFirst({
+      where: { id: dto.gradeId, tenantId },
+    });
+    if (!grade) throw new NotFoundException('Grade not found');
+
+    const branch = await this.db.tx.branch.findFirst({
+      where: { id: dto.branchId, tenantId },
+    });
+    if (!branch) throw new NotFoundException('Branch not found');
+
+    const existing = await this.db.tx.section.findUnique({
+      where: {
+        branchId_gradeId_year_name: {
+          branchId: dto.branchId,
+          gradeId: dto.gradeId,
+          year: dto.year,
+          name: dto.name,
+        },
+      },
+    });
+    if (existing) {
+      throw new ConflictException(`Section ${dto.name} already exists for this grade, branch, and year`);
+    }
+
+    const section = await this.db.tx.section.create({
+      data: {
+        name: dto.name,
+        year: dto.year,
+        capacity: dto.capacity,
+        gradeId: dto.gradeId,
+        branchId: dto.branchId,
+        tenantId,
+      },
+    });
+
+    return { data: section };
+  }
+
+  async findAllSections(gradeId?: string, branchId?: string, year?: string, tenantId?: string) {
+    const where: any = {};
+    if (gradeId) where.gradeId = gradeId;
+    if (branchId) where.branchId = branchId;
+    if (year) where.year = year;
+    if (tenantId) where.tenantId = tenantId;
+
+    const sections = await this.databaseService.section.findMany({
+      where,
+      include: {
+        grade: true,
+        branch: true,
+        _count: { select: { students: true } },
+      },
+      orderBy: [{ gradeId: 'asc' }, { name: 'asc' }],
+    });
+
+    return {
+      data: sections.map((s) => ({
+        ...s,
+        assignedCount: s._count.students,
+      })),
+    };
+  }
+
+  async findOneSection(id: string, tenantId: string) {
+    const section = await this.databaseService.section.findFirst({
+      where: { id, tenantId },
+      include: {
+        grade: true,
+        branch: true,
+        _count: { select: { students: true } },
+      },
+    });
+    if (!section) throw new NotFoundException('Section not found');
+
+    return {
+      data: { ...section, assignedCount: section._count.students },
+    };
+  }
+
+  async listSectionStudents(id: string, tenantId: string) {
+    const section = await this.databaseService.section.findFirst({
+      where: { id, tenantId },
+    });
+    if (!section) throw new NotFoundException('Section not found');
+
+    const grades = await this.databaseService.studentGrade.findMany({
+      where: { sectionId: id },
+      include: {
+        student: { include: { profile: true } },
+      },
+    });
+
+    return {
+      data: grades.map((g) => ({
+        studentId: g.student.id,
+        studentCode: g.student.studentId,
+        firstName: g.student.firstName,
+        middleName: g.student.middleName,
+        lastName: g.student.lastName,
+        sex: g.student.sex,
+      })),
+    };
+  }
+
+  @Transactional()
+  async updateSection(id: string, dto: UpdateSectionDto, tenantId: string) {
+    const section = await this.db.tx.section.findFirst({ where: { id, tenantId } });
+    if (!section) throw new NotFoundException('Section not found');
+
+    const { gradeId, branchId, ...rest } = dto as any;
+    if (Object.keys(rest).length === 0) {
+      return { message: 'No changes provided' };
+    }
+
+    await this.db.tx.section.update({ where: { id }, data: rest });
+    return this.findOneSection(id, tenantId);
+  }
+
+  @Transactional()
+  async removeSection(id: string, tenantId: string) {
+    const section = await this.db.tx.section.findFirst({
+      where: { id, tenantId },
+      include: { _count: { select: { students: true } } },
+    });
+    if (!section) throw new NotFoundException('Section not found');
+    if (section._count.students > 0) {
+      throw new ConflictException('Cannot delete section with assigned students');
+    }
+
+    await this.db.tx.section.delete({ where: { id } });
+    return { message: 'Section deleted successfully' };
+  }
+
+  @Transactional()
+  async assignStudents(dto: AssignSectionDto, tenantId: string) {
+    const section = await this.db.tx.section.findFirst({
+      where: { id: dto.sectionId, tenantId },
+      include: {
+        grade: true,
+        _count: { select: { students: true } },
+      },
+    });
+    if (!section) throw new NotFoundException('Section not found');
+
+    const currentCount = section._count.students;
+    if (currentCount + dto.studentIds.length > section.capacity) {
+      throw new ConflictException(
+        `Section ${section.name} capacity (${section.capacity}) exceeded. ` +
+        `Currently ${currentCount} assigned, trying to add ${dto.studentIds.length}.`,
+      );
+    }
+
+    for (const studentId of dto.studentIds) {
+      const student = await this.db.tx.student.findFirst({
+        where: { id: studentId, tenantId },
+      });
+      if (!student) {
+        throw new NotFoundException(`Student ${studentId} not found`);
+      }
+    }
+
+    const created = await this.db.tx.studentGrade.createMany({
+      data: dto.studentIds.map((studentId) => ({
+        grade: section.grade.grade,
+        year: section.year,
+        studentCode: '',
+        studentId,
+        sectionId: dto.sectionId,
+        branchId: section.branchId,
+      })),
+    });
+
+    return {
+      message: `${created.count} student(s) assigned to section ${section.name}`,
+    };
+  }
+
+  @Transactional()
+  async autoAssignPreview(dto: AutoAssignSectionDto, tenantId: string) {
+    const sections = await this.db.tx.section.findMany({
+      where: {
+        gradeId: dto.gradeId,
+        branchId: dto.branchId,
+        year: dto.year,
+        tenantId,
+      },
+      include: {
+        grade: true,
+        _count: { select: { students: true } },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    if (sections.length === 0) {
+      throw new NotFoundException('No sections found for this grade, branch, and year');
+    }
+
+    const assignedIds = await this.db.tx.studentGrade.findMany({
+      where: {
+        section: {
+          gradeId: dto.gradeId,
+          branchId: dto.branchId,
+          year: dto.year,
+          tenantId,
+        },
+      },
+      select: { studentId: true },
+    });
+    const assignedSet = new Set(assignedIds.map((a) => a.studentId));
+
+    const allStudents = await this.db.tx.student.findMany({
+      where: {
+        tenantId,
+        startingGrade: sections[0].grade.grade,
+      },
+      select: { id: true, sex: true },
+    });
+
+    const unassigned = allStudents.filter((s) => !assignedSet.has(s.id));
+    if (unassigned.length === 0) {
+      throw new ConflictException('All students are already assigned to sections');
+    }
+
+    const availableCapacity = sections.reduce(
+      (sum, s) => sum + (s.capacity - s._count.students),
+      0,
+    );
+    if (unassigned.length > availableCapacity) {
+      throw new ConflictException(
+        `Not enough capacity across sections (${availableCapacity}) for ${unassigned.length} unassigned students`,
+      );
+    }
+
+    const plan = this.buildAutoAssignPlan(sections, unassigned, dto.mode);
+
+    return {
+      plan: plan.map((p) => ({
+        sectionId: p.section.id,
+        sectionName: p.section.name,
+        studentIds: p.studentIds,
+      })),
+      summary: {
+        totalUnassigned: unassigned.length,
+        sections: plan.map((p) => ({
+          name: p.section.name,
+          currentCount: p.section._count.students,
+          newCount: p.studentIds.length,
+          totalAfter: p.section._count.students + p.studentIds.length,
+          capacity: p.section.capacity,
+        })),
+      },
+    };
+  }
+
+  @Transactional()
+  async confirmAutoAssign(
+    plan: { sectionId: string; studentIds: string[] }[],
+    tenantId: string,
+  ) {
+    let totalAssigned = 0;
+
+    for (const item of plan) {
+      const section = await this.db.tx.section.findFirst({
+        where: { id: item.sectionId, tenantId },
+        include: {
+          grade: true,
+          _count: { select: { students: true } },
+        },
+      });
+      if (!section) throw new NotFoundException(`Section ${item.sectionId} not found`);
+
+      if (section._count.students + item.studentIds.length > section.capacity) {
+        throw new ConflictException(
+          `Section ${section.name} would exceed capacity (${section.capacity})`,
+        );
+      }
+
+      for (const studentId of item.studentIds) {
+        const student = await this.db.tx.student.findFirst({
+          where: { id: studentId, tenantId },
+        });
+        if (!student) throw new NotFoundException(`Student ${studentId} not found`);
+      }
+
+      const result = await this.db.tx.studentGrade.createMany({
+        data: item.studentIds.map((studentId) => ({
+          grade: section.grade.grade,
+          year: section.year,
+          studentCode: '',
+          studentId,
+          sectionId: item.sectionId,
+          branchId: section.branchId,
+        })),
+      });
+
+      totalAssigned += result.count;
+    }
+
+    return { message: `${totalAssigned} student(s) assigned successfully` };
+  }
+
+  private buildAutoAssignPlan(
+    sections: any[],
+    students: { id: string; sex: string }[],
+    mode: AutoAssignMode,
+  ) {
+    const slots = sections.map((s) => ({
+      section: s,
+      studentIds: [] as string[],
+      available: s.capacity - s._count.students,
+    }));
+
+    const shuffled = [...students];
+
+    if (mode === AutoAssignMode.GENDER_RATIO) {
+      const males = shuffled.filter((s) => s.sex === 'Male');
+      const females = shuffled.filter((s) => s.sex === 'Female');
+      const others = shuffled.filter((s) => s.sex !== 'Male' && s.sex !== 'Female');
+
+      let idx = 0;
+      while (males.length > 0 || females.length > 0 || others.length > 0) {
+        const slot = slots[idx % slots.length];
+        if (slot.available <= 0) { idx++; continue; }
+
+        const pick = others.pop() ?? males.pop() ?? females.pop();
+        if (!pick) break;
+
+        slot.studentIds.push(pick.id);
+        slot.available--;
+        idx++;
+      }
+    } else {
+      for (let i = 0; i < shuffled.length; i++) {
+        const slot = slots[i % slots.length];
+        if (slot.available <= 0) continue;
+        slot.studentIds.push(shuffled[i].id);
+        slot.available--;
+      }
+    }
+
+    return slots;
   }
 }

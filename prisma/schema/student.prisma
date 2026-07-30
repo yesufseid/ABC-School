@@ -35,20 +35,42 @@ model Student {
   @@map("students")
 }
 
+model Section {
+  id        String @id @default(uuid())
+  name      String
+  year      String
+  capacity  Int    @default(30)
+
+  gradeId  String @map("grade_id")
+  grade    Grade  @relation(fields: [gradeId], references: [id])
+  branchId String @map("branch_id")
+  branch   Branch @relation(fields: [branchId], references: [id])
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  students StudentGrade[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([branchId, gradeId, year, name])
+  @@index([tenantId])
+  @@map("sections")
+}
+
 model StudentGrade {
   id          String @id @default(uuid())
   grade       Int
-  section     String
   year        String
   studentCode String @map("student_code")
 
   studentId String  @map("student_id")
   student   Student @relation(fields: [studentId], references: [id])
+  sectionId String  @map("section_id")
+  section   Section @relation(fields: [sectionId], references: [id])
   branchId  String  @map("branch_id")
   branch    Branch  @relation(fields: [branchId], references: [id])
 
-
-  // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

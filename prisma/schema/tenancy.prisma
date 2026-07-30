@@ -14,6 +14,7 @@ model Tenant {
   staffs              Staff[]
   teachers            Teacher[]
   grades              Grade[]
+  sections            Section[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -35,6 +36,7 @@ model Branch {
   students StudentGrade[]
   staffs   Staff[]
   teachers Teacher[]
+  sections Section[]
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
