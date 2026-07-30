@@ -17,6 +17,8 @@ model Tenant {
   sections            Section[]
   events              CalendarEvent[]
   timetables          Timetable[]
+  attendanceRecords   AttendanceRecord[]
+  staffAttendance     StaffAttendance[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -40,6 +42,7 @@ model Branch {
   teachers Teacher[]
   sections Section[]
   events   EventBranch[]
+  staffAttendance StaffAttendance[]
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -62,7 +65,8 @@ model Profile {
   students Student?
   parents  Parent?
   staff    Staff?
-  teacher  Teacher?
+  teacher         Teacher?
+  staffAttendance StaffAttendance[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
