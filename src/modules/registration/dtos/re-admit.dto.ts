@@ -18,6 +18,11 @@ export class ReAdmitDto {
   @IsOptional()
   branchId?: string;
 
+  @ApiPropertyOptional({ example: 'section-uuid' })
+  @IsString()
+  @IsOptional()
+  sectionId?: string;
+
   @ApiPropertyOptional({ example: 'New Address' })
   @IsString()
   @IsOptional()

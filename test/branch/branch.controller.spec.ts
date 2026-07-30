@@ -425,13 +425,26 @@ describe('BranchController (integration)', () => {
           tenantId,
         },
       });
+      const testGrade = await prisma.grade.create({
+        data: { grade: 1, tenantId },
+      });
+      const section = await prisma.section.create({
+        data: {
+          name: 'A',
+          year: '2024',
+          capacity: 30,
+          gradeId: testGrade.id,
+          branchId,
+          tenantId,
+        },
+      });
       await prisma.studentGrade.create({
         data: {
           grade: 1,
-          section: 'A',
           year: '2024',
           studentCode: 'STU-001',
           studentId: stu.id,
+          sectionId: section.id,
           branchId,
         },
       });
