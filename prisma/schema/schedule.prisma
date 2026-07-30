@@ -1,0 +1,116 @@
+// --- Schedule Module Enums ---
+
+enum CalendarEventCategory {
+  Academic
+  Examination
+  Holiday
+  Meeting
+  Sports
+  Training
+  Administration
+  Other
+}
+
+enum CalendarEventStatus {
+  Planned
+  Ongoing
+  Completed
+  Cancelled
+}
+
+enum DayOfWeek {
+  Monday
+  Tuesday
+  Wednesday
+  Thursday
+  Friday
+  Saturday
+  Sunday
+}
+
+enum TimetableStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+// --- Calendar Event Models ---
+
+model CalendarEvent {
+  id          String    @id @default(uuid())
+  title       String
+  category    CalendarEventCategory
+  status      CalendarEventStatus  @default(Planned)
+  description String?
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime  @map("end_date")
+
+  branches EventBranch[]
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  createdBy String? @map("created_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@index([startDate, endDate])
+  @@map("calendar_events")
+}
+
+model EventBranch {
+  eventId  String @map("event_id")
+  event    CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  branchId String @map("branch_id")
+  branch   Branch @relation(fields: [branchId], references: [id])
+
+  @@id([eventId, branchId])
+  @@map("event_branches")
+}
+
+// --- Timetable Models ---
+
+model Timetable {
+  id        String          @id @default(uuid())
+  year      String
+  status    TimetableStatus @default(DRAFT)
+  version   Int             @default(1)
+
+  sectionId String @map("section_id")
+  section   Section @relation(fields: [sectionId], references: [id])
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  slots TimetableSlot[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([sectionId, year, version])
+  @@index([tenantId])
+  @@map("timetables")
+}
+
+model TimetableSlot {
+  id           String    @id @default(uuid())
+  dayOfWeek    DayOfWeek @map("day_of_week")
+  periodNumber Int       @map("period_number")
+  startTime    String    @map("start_time")
+  endTime      String    @map("end_time")
+
+  timetableId String @map("timetable_id")
+  timetable   Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
+
+  subjectId String @map("subject_id")
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  teacherId String @map("teacher_id")
+  teacher   Teacher @relation(fields: [teacherId], references: [id])
+
+  @@unique([timetableId, dayOfWeek, periodNumber])
+  @@index([timetableId])
+  @@map("timetable_slots")
+}
