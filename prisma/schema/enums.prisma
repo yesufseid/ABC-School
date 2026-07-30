@@ -5,6 +5,7 @@ enum ProfileType {
   Staff
   Parent
   Student
+  Teacher
   Registral
 }
 
@@ -53,11 +54,4 @@ enum StudentStatus {
   VERIFIED
   WITHDRAWAL
 }
-enum Relationship {
-  FATHER
-  MOTHER
-  GUARDIAN
-  OTHER
 
-  @@map("relationships")
-}

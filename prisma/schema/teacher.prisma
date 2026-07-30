@@ -1,0 +1,89 @@
+model Grade {
+  id       String @id @default(uuid())
+  grade    Int
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  subjects Subject[]
+  teachers TeacherGrade[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, grade])
+  @@index([tenantId])
+  @@map("grades")
+}
+
+model Subject {
+  id   String @id @default(uuid())
+  name String
+
+  gradeId String @map("grade_id")
+  grade   Grade  @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+
+  teacherSubjects TeacherSubject[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([gradeId, name])
+  @@map("subjects")
+}
+
+model Teacher {
+  id             String   @id @default(uuid())
+  teacherId      String   @unique @map("teacher_id")
+  firstName      String   @map("first_name")
+  middleName     String?  @map("middle_name")
+  lastName       String   @map("last_name")
+  phone          String   @unique
+  email          String?
+  address        String
+  sex            Sex
+  startingDate   DateTime @map("starting_date")
+  weeklyPeriods  Int      @map("weekly_periods")
+  photoUrl       String?  @map("photo_url")
+  documentKeys   Json?    @map("document_keys")
+
+  grades TeacherGrade[]
+
+  profileId String  @unique @map("profile_id")
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  tenantId  String  @map("tenant_id")
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+  branchId  String  @map("branch_id")
+  branch    Branch  @relation(fields: [branchId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@index([branchId])
+  @@map("teachers")
+}
+
+model TeacherGrade {
+  id        String @id @default(uuid())
+  teacherId String @map("teacher_id")
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  gradeId   String @map("grade_id")
+  grade     Grade   @relation(fields: [gradeId], references: [id])
+
+  subjects TeacherSubject[]
+
+  @@unique([teacherId, gradeId])
+  @@map("teacher_grades")
+}
+
+model TeacherSubject {
+  id             String @id @default(uuid())
+  teacherGradeId String @map("teacher_grade_id")
+  grade          TeacherGrade @relation(fields: [teacherGradeId], references: [id], onDelete: Cascade)
+  subjectId      String @map("subject_id")
+  subject        Subject @relation(fields: [subjectId], references: [id])
+
+  @@unique([teacherGradeId, subjectId])
+  @@map("teacher_subjects")
+}

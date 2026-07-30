@@ -4,6 +4,7 @@ model Tenant {
   description String
   details     Json
   verifiedAt  DateTime? @map("verified_at")
+  settings    Json?
 
   members             Profile[]
   tenantSubscriptions TenantSubscription[]
@@ -11,6 +12,8 @@ model Tenant {
   students            Student[]
   parents             Parent[]
   staffs              Staff[]
+  teachers            Teacher[]
+  grades              Grade[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -31,6 +34,7 @@ model Branch {
   tenant   Tenant         @relation(fields: [tenantId], references: [id])
   students StudentGrade[]
   staffs   Staff[]
+  teachers Teacher[]
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -53,6 +57,7 @@ model Profile {
   students Student?
   parents  Parent?
   staff    Staff?
+  teacher  Teacher?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
