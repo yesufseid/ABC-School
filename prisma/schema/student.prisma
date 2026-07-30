@@ -29,6 +29,7 @@ model Student {
   parents           StudentParent[]
   grades            StudentGrade[]
   attendanceRecords AttendanceRecord[]
+  academicResults    AcademicResult[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -52,6 +53,9 @@ model Section {
   students          StudentGrade[]
   timetables        Timetable[]
   attendanceRecords AttendanceRecord[]
+  teacherAssignments TeacherSectionSubject[]
+  academicResults    AcademicResult[]
+  academicRosters    AcademicRoster[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
