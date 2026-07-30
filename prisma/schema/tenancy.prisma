@@ -19,6 +19,14 @@ model Tenant {
   timetables          Timetable[]
   attendanceRecords   AttendanceRecord[]
   staffAttendance     StaffAttendance[]
+  assessmentSlots     AssessmentSlot[]
+  assessmentWindows   AssessmentSlotWindow[]
+  teacherAssignments  TeacherSectionSubject[]
+  academicResults     AcademicResult[]
+  academicRosters     AcademicRoster[]
+  academicCorrections AcademicCorrection[]
+  academicAuditLogs   AcademicAuditLog[]
+  gradingRules        GradingRule[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -42,7 +50,8 @@ model Branch {
   teachers Teacher[]
   sections Section[]
   events   EventBranch[]
-  staffAttendance StaffAttendance[]
+  staffAttendance     StaffAttendance[]
+  assessmentWindows   AssessmentSlotWindow[]
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")

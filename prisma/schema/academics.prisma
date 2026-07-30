@@ -1,0 +1,227 @@
+// --- Academics Module Enums ---
+
+enum GradeCycle {
+  KG
+  LOWER_PRIMARY
+  UPPER_PRIMARY
+  SECONDARY
+}
+
+enum AssessmentSlotType {
+  TEST
+  MID_ASSIGNMENT
+  FINAL
+  ASSESSMENT_COMPONENT
+}
+
+enum AcademicResultStatus {
+  DRAFT
+  SUBMITTED
+}
+
+enum RosterStatus {
+  BUILDING
+  COMPLETE
+  APPROVED
+  PUBLISHED
+}
+
+enum CorrectionRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// --- Models ---
+
+model AssessmentSlot {
+  id        String            @id @default(uuid())
+  name      String
+  slotType  AssessmentSlotType @map("slot_type")
+  weight    Float
+  maxMark   Float @map("max_mark")
+  gradeCycle GradeCycle @map("grade_cycle")
+
+  windows         AssessmentSlotWindow[]
+  academicResults AcademicResult[]
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("assessment_slots")
+}
+
+model AssessmentSlotWindow {
+  id        String  @id @default(uuid())
+  isScheduled Boolean @default(false) @map("is_scheduled")
+  startDate    DateTime? @map("start_date")
+  endDate      DateTime? @map("end_date")
+  assessmentPeriodStart DateTime? @map("assessment_period_start")
+  assessmentPeriodEnd   DateTime? @map("assessment_period_end")
+
+  slotId  String @map("slot_id")
+  slot    AssessmentSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  branchId String @map("branch_id")
+  branch   Branch @relation(fields: [branchId], references: [id])
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([slotId, branchId])
+  @@map("assessment_slot_windows")
+}
+
+model TeacherSectionSubject {
+  id         String  @id @default(uuid())
+  isHomeroom Boolean @default(false) @map("is_homeroom")
+
+  teacherId String @map("teacher_id")
+  teacher   Teacher @relation(fields: [teacherId], references: [id])
+  sectionId String @map("section_id")
+  section   Section @relation(fields: [sectionId], references: [id])
+  subjectId String @map("subject_id")
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  tenantId  String @map("tenant_id")
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([sectionId, subjectId])
+  @@index([teacherId])
+  @@map("teacher_section_subjects")
+}
+
+model AcademicResult {
+  id     String              @id @default(uuid())
+  score  Float
+  status AcademicResultStatus @default(DRAFT)
+
+  term      String
+  studentId String @map("student_id")
+  student   Student @relation(fields: [studentId], references: [id])
+  subjectId String @map("subject_id")
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  slotId    String @map("slot_id")
+  slot      AssessmentSlot @relation(fields: [slotId], references: [id])
+  sectionId String @map("section_id")
+  section   Section @relation(fields: [sectionId], references: [id])
+
+  submittedBy String?  @map("submitted_by")
+  submittedAt DateTime? @map("submitted_at")
+
+  isVpFallback Boolean @default(false) @map("is_vp_fallback")
+  vpFallbackBy String? @map("vp_fallback_by")
+
+  corrections AcademicCorrection[]
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([sectionId, subjectId, slotId, term])
+  @@index([studentId])
+  @@map("academic_results")
+}
+
+model AcademicRoster {
+  id     String       @id @default(uuid())
+  term   String
+  year   String
+  status RosterStatus @default(BUILDING)
+
+  sectionId String @map("section_id")
+  section   Section @relation(fields: [sectionId], references: [id])
+  tenantId  String  @map("tenant_id")
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+
+  approvedBy  String?   @map("approved_by")
+  approvedAt  DateTime? @map("approved_at")
+  publishedBy String?   @map("published_by")
+  publishedAt DateTime? @map("published_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([sectionId, term, year])
+  @@map("academic_rosters")
+}
+
+model AcademicCorrection {
+  id     String                  @id @default(uuid())
+  reason String
+  newScore Float @map("new_score")
+  status   CorrectionRequestStatus @default(PENDING)
+  rejectionNote String? @map("rejection_note")
+
+  resultId String @map("result_id")
+  result   AcademicResult @relation(fields: [resultId], references: [id])
+
+  requestedBy String  @map("requested_by")
+  approvedBy  String? @map("approved_by")
+  approvedAt  DateTime? @map("approved_at")
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([resultId])
+  @@map("academic_corrections")
+}
+
+model AcademicAuditLog {
+  id String @id @default(uuid())
+  action       String
+  previousValue Float? @map("previous_value")
+  newValue      Float? @map("new_value")
+  reason        String?
+
+  resultId String? @map("result_id")
+
+  performedBy     String      @map("performed_by")
+  performedByRole ProfileType @map("performed_by_role")
+
+  branchId  String  @map("branch_id")
+  sectionId String  @map("section_id")
+  subjectId String? @map("subject_id")
+  slotId    String? @map("slot_id")
+  studentId String? @map("student_id")
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, createdAt])
+  @@index([resultId])
+  @@map("academic_audit_logs")
+}
+
+model GradingRule {
+  id       String  @id @default(uuid())
+  minMarks Float   @map("min_marks")
+  maxMarks Float   @map("max_marks")
+  grade    String
+  points   Float
+  isPass   Boolean @default(true) @map("is_pass")
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, grade])
+  @@map("grading_rules")
+}
