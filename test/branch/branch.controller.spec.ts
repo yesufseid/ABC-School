@@ -417,7 +417,7 @@ describe('BranchController (integration)', () => {
           studentId: 'STU-001',
           admissionDate: new Date('2024-09-01'),
           enrollmentDate: new Date('2024-09-01'),
-                sex: 'Male',
+          sex: 'Male',
           address: 'Addis Ababa',
           nationality: 'Ethiopian',
           password: 'hashed',
