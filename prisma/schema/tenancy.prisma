@@ -27,6 +27,7 @@ model Tenant {
   academicCorrections AcademicCorrection[]
   academicAuditLogs   AcademicAuditLog[]
   gradingRules        GradingRule[]
+  principals          Principal[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -52,6 +53,7 @@ model Branch {
   events   EventBranch[]
   staffAttendance     StaffAttendance[]
   assessmentWindows   AssessmentSlotWindow[]
+  principals          Principal[]
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -75,6 +77,7 @@ model Profile {
   parents  Parent?
   staff    Staff?
   teacher         Teacher?
+  principal       Principal?
   staffAttendance StaffAttendance[]
 
   createdAt DateTime @default(now()) @map("created_at")

@@ -32,3 +32,7 @@ export function generateTeacherId(branchCode: string, seq: number): string {
 export function generateParentId(branchCode: string, seq: number): string {
   return `${branchCode}-PRN-${String(seq).padStart(2, '0')}`;
 }
+
+export function generatePrincipalId(branchCode: string, seq: number): string {
+  return `${branchCode}-PRC-${String(seq).padStart(4, '0')}`;
+}
