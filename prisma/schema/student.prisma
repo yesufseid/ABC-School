@@ -1,27 +1,20 @@
-
-
 model Student {
-  id                  String        @id @default(uuid())
-  firstName           String        @map("first_name")
-  middleName          String       @map("middle_name")
-  lastName            String        @map("last_name")
-  studentId           String        @unique @map("student_id")
-  mustChangePassword  Boolean       @default(true) @map("must_change_password")
-  admissionDate       DateTime      @map("admission_date")
-  enrollmentDate      DateTime      @map("enrollment_date")
-  gradeOfInterest     String       @map("grade_of_interest")
-  sex                 String
-  address             String
-  nationality         String
-  previousSchool      String       @map("previous_school")
-  languagePreference  String       @map("language_preference")
-  password            String
-  phone               String?
-  status              StudentStatus @default(ACTIVE)
+  id            String    @id @default(uuid())
+  firstName     String    @map("first_name")
+  middleName    String    @map("middle_name")
+  lastName      String    @map("last_name")
+  dateOfBirth   DateTime  @map("date_of_birth")
+  startingGrade Int       @map("starting_grade")
+  enrolled      Boolean   @default(false)
+  verifiedAt    DateTime?
 
-  // relationships
-  parentLinks StudentParent[]
-  profile     Profile?
+  profileId String          @unique @map("profile_id")
+  profile   Profile         @relation(fields: [profileId], references: [id])
+  tenantId  String          @map("tenant_id")
+  tenant    Tenant          @relation(fields: [tenantId], references: [id])
+  parents   StudentParent[]
+  grades    StudentGrade[]
+
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -30,45 +23,59 @@ model Student {
   @@map("students")
 }
 
-model Parent {
-  id      String  @id @default(uuid())
-  name    String
-  sex      String
-  address    String
-  nationality         String
-  mustChangePassword  Boolean       @default(true) @map("must_change_password")
+model StudentGrade {
+  id          String @id @default(uuid())
+  grade       Int
+  section     String
+  year        String
+  studentCode String @map("student_code")
 
-  // relationships
-  userId   String         @unique @map("user_id")
-  user     User           @relation(fields: [userId], references: [id])
-  students StudentParent[]
+  studentId String  @map("student_id")
+  student   Student @relation(fields: [studentId], references: [id])
+  branchId  String  @map("branch_id")
+  branch    Branch  @relation(fields: [branchId], references: [id])
+
 
   // timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([studentId, grade])
+  @@index([studentId])
+  @@map("student_grades")
+}
+
+model Parent {
+  id        String    @id @default(uuid())
+  name      String
+  verifiedAt DateTime?
+
+  profileId String          @unique @map("profile_id")
+  profile   Profile         @relation(fields: [profileId], references: [id])
+  tenantId  String          @map("tenant_id")
+  tenant    Tenant          @relation(fields: [tenantId], references: [id])
+  students  StudentParent[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("parents")
 }
 
-model StudentIdCounter {
-  branchCode String
-  year       Int
-  lastSeq    Int    @default(0)
-
-  @@id([branchCode, year])
-  @@map("student_id_counters")
-}
-
 model StudentParent {
-  studentId    String  @map("student_id")
-  parentId     String  @map("parent_id")
-  relationship  Relationship
-  isPrimary    Boolean @default(true) @map("is_primary")
+  id       String                @id @default(uuid())
+  relation StudentParentRelation
 
-  // relationships
-  student Student @relation(fields: [studentId], references: [id])
-  parent  Parent  @relation(fields: [parentId], references: [id])
+  studentId String  @map("student_id")
+  student   Student @relation(fields: [studentId], references: [id])
+  parentId  String  @map("parent_id")
+  parent    Parent  @relation(fields: [parentId], references: [id])
 
-  @@id([studentId, parentId])
-  @@map("student_parents")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([studentId, parentId])
+  @@index([studentId])
+  @@map("students_parents")
+}
 }

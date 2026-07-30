@@ -5,6 +5,40 @@ enum ProfileType {
   Staff
   Parent
   Student
+  Registral
+}
+
+enum Sex {
+  Male
+  Female
+}
+
+enum Position {
+  Accountant
+  Librarian
+  Security
+  Driver
+  Cleaner
+  ITSupport
+  FrontDesk
+  Teacher
+  Other
+}
+
+enum Department {
+  Admin
+  Facilities
+  Finance
+  Academic
+  IT
+  Other
+}
+
+enum StudentParentRelation {
+  Father
+  Mother
+  Guardian
+  Other
 }
 
 enum StudentStatus {

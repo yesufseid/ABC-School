@@ -1,12 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsNotEmpty,
   IsObject,
   IsOptional,
   IsPhoneNumber,
   IsString,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
+import { NoDuplicates } from '../../../common/decorators/no-duplicates.decorator';
+import { CreateBranchDto } from './create-branch.dto';
 
 export class CreateTenantDto {
   @ApiProperty({ example: '+251912345678' })
@@ -43,4 +48,17 @@ export class CreateTenantDto {
   })
   @IsObject()
   details: Record<string, string | number | boolean>;
+
+  @ApiPropertyOptional({ type: [CreateBranchDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateBranchDto)
+  @NoDuplicates('branchCode', {
+    message: 'Duplicate branch codes provided',
+  })
+  @NoDuplicates('branchPrefix', {
+    message: 'Duplicate branch prefixes provided',
+  })
+  branches?: CreateBranchDto[];
 }

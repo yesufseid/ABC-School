@@ -2,19 +2,43 @@ model Tenant {
   id          String    @id @default(uuid())
   name        String
   description String
-  branchCode  String?   @unique @map("branch_code")
-  details     Json?
+  details     Json
   verifiedAt  DateTime? @map("verified_at")
 
-  // relationships
-  members Profile[]
-
-  // timestamps
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
+  members             Profile[]
   tenantSubscriptions TenantSubscription[]
+  branches            Branch[]
+  students            Student[]
+  parents             Parent[]
+  staffs              Staff[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("tenants")
+}
+
+model Branch {
+  id           String @id @default(uuid())
+  name         String
+  description  String
+  details      Json
+  branchCode   String @map("branch_code")
+  branchPrefix String @unique @map("branch_prefix")
+
+  // relationships
+  tenantId String         @map("tenant_id")
+  tenant   Tenant         @relation(fields: [tenantId], references: [id])
+  students StudentGrade[]
+  staffs   Staff[]
+
+  // timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, branchCode])
+  @@index([tenantId])
+  @@map("branches")
 }
 
 model Profile {
@@ -22,20 +46,18 @@ model Profile {
   name String
   type ProfileType
 
-  // relationships
-  userId    String?   @unique @map("user_id")
-  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  studentId String?   @unique @map("student_id")
-  student   Student?  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  tenantId  String?   @map("tenant_id")
-  tenant    Tenant?   @relation(fields: [tenantId], references: [id])
+  userId   String   @unique @map("user_id")
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId String?  @map("tenant_id")
+  tenant   Tenant?  @relation(fields: [tenantId], references: [id])
+  students Student?
+  parents  Parent?
+  staff    Staff?
 
-  // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([id, tenantId])
-  @@index(fields: [tenantId])
-  @@index(fields: [userId])
+  @@unique([tenantId])
+  @@index([tenantId])
   @@map("profiles")
 }

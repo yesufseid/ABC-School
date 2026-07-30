@@ -39,9 +39,9 @@ export class DatabaseService
               'Subscription',
               'User',
               'Tenant',
-              'Parent',
-              'StudentParent',
+              'Branch',
               'Student',
+              'Parent',
             ];
 
             if (nonTenantSpecificModels.includes(model)) {

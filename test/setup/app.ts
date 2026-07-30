@@ -1,4 +1,8 @@
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 
@@ -13,9 +17,7 @@ export async function createTestApp(): Promise<INestApplication> {
 
   app = moduleFixture.createNestApplication();
 
-  app.useGlobalPipes(
-    new ValidationPipe({ transform: true, whitelist: true }),
-  );
+  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
   app.setGlobalPrefix('api');
   app.enableVersioning({
     type: VersioningType.URI,
