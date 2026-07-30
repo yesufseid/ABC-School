@@ -5,4 +5,5 @@ export type TokenPayload = {
   type: ProfileType;
   tenantId?: string;
   subscriptionEndDate?: string;
+  profileId?: string;
 };

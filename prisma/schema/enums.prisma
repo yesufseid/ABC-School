@@ -1,7 +1,11 @@
 enum ProfileType {
   Admin
   Owner
+  Principal
+  VicePrincipal
   Registrar
+  HR
+  Counselor
   Staff
   Parent
   Student

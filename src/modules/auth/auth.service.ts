@@ -34,6 +34,7 @@ export class AuthService {
         password: true,
         profile: {
           select: {
+            id: true,
             name: true,
             tenantId: true,
             type: true,
@@ -74,6 +75,7 @@ export class AuthService {
       tenantId: user.profile.tenantId,
       type: user.profile.type,
       subscriptionEndDate,
+      profileId: user.profile.id,
     });
 
     return {

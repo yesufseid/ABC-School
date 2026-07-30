@@ -26,8 +26,9 @@ model Student {
   profile   Profile         @relation(fields: [profileId], references: [id])
   tenantId  String          @map("tenant_id")
   tenant    Tenant          @relation(fields: [tenantId], references: [id])
-  parents   StudentParent[]
-  grades    StudentGrade[]
+  parents           StudentParent[]
+  grades            StudentGrade[]
+  attendanceRecords AttendanceRecord[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -48,8 +49,9 @@ model Section {
   tenantId String @map("tenant_id")
   tenant   Tenant @relation(fields: [tenantId], references: [id])
 
-  students   StudentGrade[]
-  timetables Timetable[]
+  students          StudentGrade[]
+  timetables        Timetable[]
+  attendanceRecords AttendanceRecord[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

@@ -1,0 +1,67 @@
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+model AttendanceRecord {
+  id        String           @id @default(uuid())
+  date      DateTime
+  status    AttendanceStatus @default(PRESENT)
+  note      String?
+
+  studentId String @map("student_id")
+  student   Student @relation(fields: [studentId], references: [id])
+  sectionId String @map("section_id")
+  section   Section @relation(fields: [sectionId], references: [id])
+  markedBy  String  @map("marked_by")
+
+  originalRecordId String? @map("original_record_id")
+  originalRecord   AttendanceRecord? @relation("StudentAttendanceCorrection", fields: [originalRecordId], references: [id])
+  corrections      AttendanceRecord[] @relation("StudentAttendanceCorrection")
+  correctionReason String? @map("correction_reason")
+  correctedBy      String? @map("corrected_by")
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId, date])
+  @@index([sectionId, date])
+  @@index([studentId, date])
+  @@map("attendance_records")
+}
+
+model StaffAttendance {
+  id        String           @id @default(uuid())
+  date      DateTime
+  status    AttendanceStatus
+  checkIn   DateTime?        @map("check_in")
+  checkOut  DateTime?        @map("check_out")
+
+  profileId String @map("profile_id")
+  profile   Profile @relation(fields: [profileId], references: [id])
+  branchId  String @map("branch_id")
+  branch    Branch @relation(fields: [branchId], references: [id])
+
+  originalRecordId String? @map("original_record_id")
+  originalRecord   StaffAttendance? @relation("StaffAttendanceCorrection", fields: [originalRecordId], references: [id])
+  corrections      StaffAttendance[] @relation("StaffAttendanceCorrection")
+  correctionReason String? @map("correction_reason")
+  correctedBy      String? @map("corrected_by")
+
+  markedBy  String? @map("marked_by")
+  tenantId  String  @map("tenant_id")
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([profileId, date])
+  @@index([tenantId, date])
+  @@index([branchId, date])
+  @@map("staff_attendance")
+}
