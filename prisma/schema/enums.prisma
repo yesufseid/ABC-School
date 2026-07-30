@@ -10,7 +10,6 @@ enum ProfileType {
   Parent
   Student
   Teacher
-  Registral
 }
 
 enum Sex {

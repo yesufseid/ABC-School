@@ -13,7 +13,7 @@ import { ProfileType } from 'prisma/src/generated/prisma/enums';
 import { CreateStaffDto } from './dtos/create-staff.dto';
 import { UpdateStaffDto } from './dtos/update-staff.dto';
 
-@Roles(ProfileType.Owner, ProfileType.Registral)
+@Roles(ProfileType.Owner, ProfileType.Registrar)
 @Controller('staff')
 export class StaffController {
   constructor(private readonly staffService: StaffService) {}

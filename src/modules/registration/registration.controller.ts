@@ -100,7 +100,7 @@ export class RegistrationController {
 
   // --- Section endpoints ---
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral)
+  @Roles(ProfileType.Owner, ProfileType.Registrar)
   @Post('sections')
   createSection(
     @Body() dto: CreateSectionDto,
@@ -109,7 +109,7 @@ export class RegistrationController {
     return this.registrationService.createSection(dto, tenantId);
   }
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral, ProfileType.Teacher)
+  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Teacher)
   @Get('sections')
   findAllSections(
     @Query('gradeId') gradeId: string | undefined,
@@ -120,7 +120,7 @@ export class RegistrationController {
     return this.registrationService.findAllSections(gradeId, branchId, year, tenantId);
   }
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral, ProfileType.Teacher)
+  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Teacher)
   @Get('sections/:id')
   findOneSection(
     @Param('id') id: string,
@@ -129,7 +129,7 @@ export class RegistrationController {
     return this.registrationService.findOneSection(id, tenantId);
   }
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral, ProfileType.Teacher)
+  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Teacher)
   @Get('sections/:id/students')
   listSectionStudents(
     @Param('id') id: string,
@@ -138,7 +138,7 @@ export class RegistrationController {
     return this.registrationService.listSectionStudents(id, tenantId);
   }
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral)
+  @Roles(ProfileType.Owner, ProfileType.Registrar)
   @Patch('sections/:id')
   updateSection(
     @Param('id') id: string,
@@ -148,7 +148,7 @@ export class RegistrationController {
     return this.registrationService.updateSection(id, dto, tenantId);
   }
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral)
+  @Roles(ProfileType.Owner, ProfileType.Registrar)
   @Delete('sections/:id')
   removeSection(
     @Param('id') id: string,
@@ -157,7 +157,7 @@ export class RegistrationController {
     return this.registrationService.removeSection(id, tenantId);
   }
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral)
+  @Roles(ProfileType.Owner, ProfileType.Registrar)
   @Post('sections/assign')
   assignStudents(
     @Body() dto: AssignSectionDto,
@@ -166,7 +166,7 @@ export class RegistrationController {
     return this.registrationService.assignStudents(dto, tenantId);
   }
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral)
+  @Roles(ProfileType.Owner, ProfileType.Registrar)
   @Post('sections/auto-assign')
   autoAssignPreview(
     @Body() dto: AutoAssignSectionDto,
@@ -175,7 +175,7 @@ export class RegistrationController {
     return this.registrationService.autoAssignPreview(dto, tenantId);
   }
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral)
+  @Roles(ProfileType.Owner, ProfileType.Registrar)
   @Post('sections/auto-assign/confirm')
   confirmAutoAssign(
     @Body() plan: { sectionId: string; studentIds: string[] }[],

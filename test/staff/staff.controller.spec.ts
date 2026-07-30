@@ -52,7 +52,7 @@ describe('StaffController (integration)', () => {
     });
 
     it('should return 201 when registral creates a staff', async () => {
-      const { token, branchId } = await seedTenantAndLogin(prisma, app, ProfileType.Registral);
+      const { token, branchId } = await seedTenantAndLogin(prisma, app, ProfileType.Registrar);
       const dto = buildCreateStaffDto({ branchId });
 
       const response = await http
