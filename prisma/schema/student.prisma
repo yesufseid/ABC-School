@@ -5,8 +5,22 @@ model Student {
   lastName      String    @map("last_name")
   dateOfBirth   DateTime  @map("date_of_birth")
   startingGrade Int       @map("starting_grade")
+  enrollmentDate DateTime @map("enrollment_date")
   enrolled      Boolean   @default(false)
   verifiedAt    DateTime?
+
+  studentId          String        @unique @map("student_id")
+  mustChangePassword Boolean       @default(true) @map("must_change_password")
+  admissionDate      DateTime      @map("admission_date")
+  sex                Sex
+  address            String
+  nationality        String
+  previousSchool     String?       @map("previous_school")
+  languagePreference String?       @map("language_preference")
+  password           String
+  phone              String?
+  status             StudentStatus @default(ACTIVE)
+  photoUrl           String?       @map("photo_url")
 
   profileId String          @unique @map("profile_id")
   profile   Profile         @relation(fields: [profileId], references: [id])
@@ -15,7 +29,6 @@ model Student {
   parents   StudentParent[]
   grades    StudentGrade[]
 
-  // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -33,6 +46,7 @@ model StudentGrade {
   student   Student @relation(fields: [studentId], references: [id])
   branchId  String  @map("branch_id")
   branch    Branch  @relation(fields: [branchId], references: [id])
+
 
   // timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -52,7 +66,6 @@ model StudentParent {
   parentId  String  @map("parent_id")
   parent    Parent  @relation(fields: [parentId], references: [id])
 
-  // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

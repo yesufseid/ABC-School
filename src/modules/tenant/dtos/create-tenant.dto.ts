@@ -33,6 +33,11 @@ export class CreateTenantDto {
   @IsNotEmpty()
   name: string;
 
+  @ApiProperty({ example: 'ADC' })
+  @IsString()
+  @IsNotEmpty()
+  branchCode: string;
+
   @ApiProperty({ example: 'A private K-12 school in Addis Ababa' })
   @IsString()
   @IsNotEmpty()

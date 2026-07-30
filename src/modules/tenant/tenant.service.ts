@@ -59,8 +59,8 @@ export class TenantService {
           create: {
             name: dto.ownerName,
             type: ProfileType.Owner,
-            tenant: {
-              create: {
+              tenant: {
+               create: {
                 name: dto.name,
                 description: dto.description,
                 details: dto.details,
@@ -190,13 +190,16 @@ export class TenantService {
           userId: owner.userId,
         },
         members: members
-          .filter((member) => member.id !== owner.id)
+          .filter(
+            (member) =>
+              member.id !== owner.id && member.userId !== null,
+          )
           .map((member) => ({
             id: member.id,
             name: member.name,
-            phoneNumber: member.user.phoneNumber,
+            phoneNumber: member.user!.phoneNumber,
             type: member.type,
-            userId: member.userId,
+            userId: member.userId!,
           })),
         tenantSubscriptions: tenantSubscriptions.map((ts) => ({
           ...ts,
