@@ -24,7 +24,6 @@ export class AttendanceController {
     ProfileType.Principal,
     ProfileType.VicePrincipal,
     ProfileType.Registrar,
-    ProfileType.Registral,
   )
   @Post()
   take(@Body() dto: TakeAttendanceDto, @Req() req: { user: TokenPayload }) {
@@ -37,7 +36,6 @@ export class AttendanceController {
     ProfileType.VicePrincipal,
     ProfileType.Registrar,
     ProfileType.Owner,
-    ProfileType.Registral,
   )
   @Get('section/:sectionId/date/:date')
   getSectionSheet(
@@ -54,7 +52,6 @@ export class AttendanceController {
     ProfileType.Registrar,
     ProfileType.Owner,
     ProfileType.Parent,
-    ProfileType.Registral,
   )
   @Get('history/:studentId')
   getHistory(

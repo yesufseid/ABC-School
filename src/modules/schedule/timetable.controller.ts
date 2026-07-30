@@ -16,7 +16,7 @@ import { ProfileType } from 'prisma/src/generated/prisma/enums';
 export class TimetableController {
   constructor(private readonly timetableService: TimetableService) {}
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral)
+  @Roles(ProfileType.Owner, ProfileType.Registrar)
   @Post('generate')
   generate(@Body() dto: GenerateTimetableDto) {
     return this.timetableService.generate(dto);
@@ -25,7 +25,6 @@ export class TimetableController {
   @Roles(
     ProfileType.Owner,
     ProfileType.Registrar,
-    ProfileType.Registral,
     ProfileType.Teacher,
   )
   @Get()
@@ -39,7 +38,6 @@ export class TimetableController {
   @Roles(
     ProfileType.Owner,
     ProfileType.Registrar,
-    ProfileType.Registral,
     ProfileType.Teacher,
   )
   @Get('report/teacher-load')
@@ -53,7 +51,6 @@ export class TimetableController {
   @Roles(
     ProfileType.Owner,
     ProfileType.Registrar,
-    ProfileType.Registral,
     ProfileType.Teacher,
   )
   @Get(':id')
@@ -61,13 +58,13 @@ export class TimetableController {
     return this.timetableService.findOne(id);
   }
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral)
+  @Roles(ProfileType.Owner, ProfileType.Registrar)
   @Post(':id/activate')
   activate(@Param('id') id: string) {
     return this.timetableService.activate(id);
   }
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral)
+  @Roles(ProfileType.Owner, ProfileType.Registrar)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.timetableService.remove(id);

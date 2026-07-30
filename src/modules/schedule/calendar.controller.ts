@@ -18,7 +18,7 @@ import { ProfileType } from 'prisma/src/generated/prisma/enums';
 export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral)
+  @Roles(ProfileType.Owner, ProfileType.Registrar)
   @Post()
   create(@Body() dto: CreateEventDto) {
     return this.calendarService.create(dto);
@@ -27,7 +27,6 @@ export class CalendarController {
   @Roles(
     ProfileType.Owner,
     ProfileType.Registrar,
-    ProfileType.Registral,
     ProfileType.Teacher,
   )
   @Get()
@@ -43,7 +42,6 @@ export class CalendarController {
   @Roles(
     ProfileType.Owner,
     ProfileType.Registrar,
-    ProfileType.Registral,
     ProfileType.Teacher,
   )
   @Get('report/upcoming')
@@ -54,7 +52,6 @@ export class CalendarController {
   @Roles(
     ProfileType.Owner,
     ProfileType.Registrar,
-    ProfileType.Registral,
     ProfileType.Teacher,
   )
   @Get('report/by-category')
@@ -65,7 +62,6 @@ export class CalendarController {
   @Roles(
     ProfileType.Owner,
     ProfileType.Registrar,
-    ProfileType.Registral,
     ProfileType.Teacher,
   )
   @Get(':id')
@@ -73,13 +69,13 @@ export class CalendarController {
     return this.calendarService.findOne(id);
   }
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral)
+  @Roles(ProfileType.Owner, ProfileType.Registrar)
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateEventDto) {
     return this.calendarService.update(id, dto);
   }
 
-  @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Registral)
+  @Roles(ProfileType.Owner, ProfileType.Registrar)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.calendarService.remove(id);
