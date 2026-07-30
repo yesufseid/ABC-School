@@ -6,6 +6,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { StaffModule } from './modules/Staff/staff.module';
 import { RegistrationModule } from './modules/registration/registration.module';
 import { TeacherModule } from './modules/teacher/teacher.module';
+import { ScheduleModule } from './modules/schedule/schedule.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { TeacherModule } from './modules/teacher/teacher.module';
     RegistrationModule,
     StaffModule,
     TeacherModule,
+    ScheduleModule,
     TenantModule,
     SubscriptionModule,
   ],

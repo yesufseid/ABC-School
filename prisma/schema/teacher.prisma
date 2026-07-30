@@ -21,10 +21,13 @@ model Subject {
   id   String @id @default(uuid())
   name String
 
+  periodsPerWeek Int @default(1) @map("periods_per_week")
+
   gradeId String @map("grade_id")
   grade   Grade  @relation(fields: [gradeId], references: [id], onDelete: Cascade)
 
   teacherSubjects TeacherSubject[]
+  timetableSlots  TimetableSlot[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -48,7 +51,8 @@ model Teacher {
   photoUrl       String?  @map("photo_url")
   documentKeys   Json?    @map("document_keys")
 
-  grades TeacherGrade[]
+  grades         TeacherGrade[]
+  timetableSlots TimetableSlot[]
 
   profileId String  @unique @map("profile_id")
   profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
