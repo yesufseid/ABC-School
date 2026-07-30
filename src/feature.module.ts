@@ -9,10 +9,12 @@ import { TeacherModule } from './modules/teacher/teacher.module';
 import { ScheduleModule } from './modules/schedule/schedule.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AcademicsModule } from './modules/academics/academics.module';
+import { PrincipalModule } from './modules/principal/principal.module';
 
 @Module({
   imports: [
     AcademicsModule,
+    PrincipalModule,
     AnalyticsModule,
     AttendanceModule,
     AuthModule,
