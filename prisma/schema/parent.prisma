@@ -1,15 +1,22 @@
 model Parent {
   id         String    @id @default(uuid())
   name       String
+  parentId   String    @unique @map("parent_id")
+  sex        Sex
+  address    String
+  nationality String
+  phone      String    @unique
+  mustChangePassword Boolean @default(true) @map("must_change_password")
   verifiedAt DateTime?
 
+  userId   String         @unique @map("user_id")
+  user     User           @relation(fields: [userId], references: [id])
   profileId String          @unique @map("profile_id")
   profile   Profile         @relation(fields: [profileId], references: [id])
   tenantId  String          @map("tenant_id")
   tenant    Tenant          @relation(fields: [tenantId], references: [id])
   students  StudentParent[]
 
-  // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

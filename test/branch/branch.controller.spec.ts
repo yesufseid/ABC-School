@@ -393,40 +393,45 @@ describe('BranchController (integration)', () => {
 
       const branchId = createResponse.body.id;
 
+      const stuProfile = await prisma.profile.create({
+        data: {
+          name: 'Student Profile',
+          type: ProfileType.Student,
+          userId: (
+            await prisma.user.create({
+              data: {
+                phoneNumber: '+251988000099',
+                password: 'hashed',
+              },
+            })
+          ).id,
+        },
+      });
+      const stu = await prisma.student.create({
+        data: {
+          firstName: 'Test',
+          middleName: 'Student',
+          lastName: 'Name',
+          dateOfBirth: new Date('2015-01-01'),
+          startingGrade: 1,
+          studentId: 'STU-001',
+          admissionDate: new Date('2024-09-01'),
+          enrollmentDate: new Date('2024-09-01'),
+                sex: 'Male',
+          address: 'Addis Ababa',
+          nationality: 'Ethiopian',
+          password: 'hashed',
+          profileId: stuProfile.id,
+          tenantId,
+        },
+      });
       await prisma.studentGrade.create({
         data: {
           grade: 1,
           section: 'A',
           year: '2024',
           studentCode: 'STU-001',
-          studentId: (
-            await prisma.student.create({
-              data: {
-                firstName: 'Test',
-                middleName: 'Student',
-                lastName: 'Name',
-                dateOfBirth: new Date('2015-01-01'),
-                startingGrade: 1,
-                profileId: (
-                  await prisma.profile.create({
-                    data: {
-                      name: 'Student Profile',
-                      type: ProfileType.Student,
-                      userId: (
-                        await prisma.user.create({
-                          data: {
-                            phoneNumber: '+251988000099',
-                            password: 'hashed',
-                          },
-                        })
-                      ).id,
-                    },
-                  })
-                ).id,
-                tenantId,
-              },
-            })
-          ).id,
+          studentId: stu.id,
           branchId,
         },
       });

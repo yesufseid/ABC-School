@@ -6,41 +6,42 @@ import {
   IsDateString,
   IsEnum,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsPhoneNumber,
   IsString,
+  Min,
   ValidateNested,
 } from 'class-validator';
-import { Relationship } from 'prisma/src/generated/prisma/enums';
+import { Sex, StudentParentRelation } from 'prisma/src/generated/prisma/enums';
 
 export class ParentLinkDto {
   @ApiProperty({ example: '+251911223344' })
   @IsPhoneNumber()
   phoneNumber: string;
 
-  @ApiPropertyOptional({ example: 'Girma Beyene' })
+  @ApiProperty({ example: 'Girma Beyene' })
   @IsString()
-  @IsOptional()
-  name?: string;
+  @IsNotEmpty()
+  name: string;
 
-  @ApiPropertyOptional({ example: 'Male' })
+  @ApiProperty({ example: 'Male', enum: Sex })
+  @IsEnum(Sex)
+  sex: Sex;
+
+  @ApiProperty({ example: 'Addis Ababa' })
   @IsString()
-  @IsOptional()
-  sex?: string;
+  @IsNotEmpty()
+  address: string;
 
-  @ApiPropertyOptional({ example: 'Addis Ababa' })
+  @ApiProperty({ example: 'Ethiopian' })
   @IsString()
-  @IsOptional()
-  address?: string;
+  @IsNotEmpty()
+  nationality: string;
 
-  @ApiPropertyOptional({ example: 'Ethiopian' })
-  @IsString()
-  @IsOptional()
-  nationality?: string;
-
-  @ApiProperty({ example: 'FATHER', enum: Relationship })
-  @IsEnum(Relationship)
-  relationship: Relationship;
+  @ApiProperty({ example: 'Father', enum: StudentParentRelation })
+  @IsEnum(StudentParentRelation)
+  relation: StudentParentRelation;
 
   @ApiPropertyOptional({ default: true })
   @IsBoolean()
@@ -64,23 +65,26 @@ export class CreateStudentDto {
   @IsNotEmpty()
   lastName: string;
 
-  @ApiProperty({ example: '2024-09-01' })
+  @ApiProperty({ example: '2015-05-15' })
   @IsDateString()
-  admissionDate: string;
+  dateOfBirth: string;
 
-  @ApiProperty({ example: '2024-09-01' })
+  @ApiProperty({ example: 1 })
+  @IsNumber()
+  @Min(1)
+  startingGrade: number;
+
+  @ApiProperty({ example: '2026-09-01' })
   @IsDateString()
   enrollmentDate: string;
 
-  @ApiProperty({ example: 'Grade 1' })
-  @IsString()
-  @IsNotEmpty()
-  gradeOfInterest: string;
+  @ApiProperty({ example: '2026-09-01' })
+  @IsDateString()
+  admissionDate: string;
 
-  @ApiProperty({ example: 'Male' })
-  @IsString()
-  @IsNotEmpty()
-  sex: string;
+  @ApiProperty({ example: 'Male', enum: Sex })
+  @IsEnum(Sex)
+  sex: Sex;
 
   @ApiProperty({ example: 'Addis Ababa' })
   @IsString()
@@ -92,25 +96,24 @@ export class CreateStudentDto {
   @IsNotEmpty()
   nationality: string;
 
-  @ApiProperty({ example: 'Sunshine Elementary' })
+  @ApiPropertyOptional({ example: 'Sunshine Elementary' })
   @IsString()
-  @IsNotEmpty()
-  previousSchool: string;
+  @IsOptional()
+  previousSchool?: string;
 
-  @ApiProperty({ example: 'English' })
+  @ApiPropertyOptional({ example: 'English' })
   @IsString()
-  @IsNotEmpty()
-  languagePreference: string;
+  @IsOptional()
+  languagePreference?: string;
 
   @ApiPropertyOptional({ example: '+251911223344' })
-  @IsString()
+  @IsPhoneNumber()
   @IsOptional()
   phone?: string;
 
-  @ApiPropertyOptional({ type: [ParentLinkDto] })
+  @ApiProperty({ type: [ParentLinkDto] })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ParentLinkDto)
-  @IsOptional()
-  parents?: ParentLinkDto[];
+  parents: ParentLinkDto[];
 }

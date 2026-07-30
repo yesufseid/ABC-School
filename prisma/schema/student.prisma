@@ -5,8 +5,22 @@ model Student {
   lastName      String    @map("last_name")
   dateOfBirth   DateTime  @map("date_of_birth")
   startingGrade Int       @map("starting_grade")
+  enrollmentDate DateTime @map("enrollment_date")
   enrolled      Boolean   @default(false)
   verifiedAt    DateTime?
+
+  studentId          String        @unique @map("student_id")
+  mustChangePassword Boolean       @default(true) @map("must_change_password")
+  admissionDate      DateTime      @map("admission_date")
+  sex                Sex
+  address            String
+  nationality        String
+  previousSchool     String?       @map("previous_school")
+  languagePreference String?       @map("language_preference")
+  password           String
+  phone              String?
+  status             StudentStatus @default(ACTIVE)
+  photoUrl           String?       @map("photo_url")
 
   profileId String          @unique @map("profile_id")
   profile   Profile         @relation(fields: [profileId], references: [id])
@@ -15,8 +29,6 @@ model Student {
   parents   StudentParent[]
   grades    StudentGrade[]
 
-
-  // timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -45,23 +57,6 @@ model StudentGrade {
   @@map("student_grades")
 }
 
-model Parent {
-  id        String    @id @default(uuid())
-  name      String
-  verifiedAt DateTime?
-
-  profileId String          @unique @map("profile_id")
-  profile   Profile         @relation(fields: [profileId], references: [id])
-  tenantId  String          @map("tenant_id")
-  tenant    Tenant          @relation(fields: [tenantId], references: [id])
-  students  StudentParent[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("parents")
-}
-
 model StudentParent {
   id       String                @id @default(uuid())
   relation StudentParentRelation
@@ -77,5 +72,4 @@ model StudentParent {
   @@unique([studentId, parentId])
   @@index([studentId])
   @@map("students_parents")
-}
 }

@@ -13,6 +13,12 @@ enum Sex {
   Female
 }
 
+enum AdmissionScenario {
+  GRADE_PROMOTION
+  RE_ENROLLMENT
+  BRANCH_TRANSFER
+}
+
 enum Position {
   Accountant
   Librarian
@@ -43,6 +49,7 @@ enum StudentParentRelation {
 
 enum StudentStatus {
   ACTIVE
+  ACTIVE_DOCS_PENDING
   VERIFIED
   WITHDRAWAL
 }

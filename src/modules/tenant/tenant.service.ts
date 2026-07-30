@@ -59,11 +59,10 @@ export class TenantService {
           create: {
             name: dto.ownerName,
             type: ProfileType.Owner,
-            tenant: {
-              create: {
+              tenant: {
+               create: {
                 name: dto.name,
                 description: dto.description,
-                branchCode: dto.branchCode,
                 details: dto.details,
                 branches: dto.branches?.length
                   ? {
@@ -240,7 +239,6 @@ export class TenantService {
                   data: {
                     name: dto.name,
                     description: dto.description,
-                    branchCode: dto.branchCode,
                     details: dto.details,
                   },
                 },
