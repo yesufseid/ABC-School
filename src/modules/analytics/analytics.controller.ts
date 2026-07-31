@@ -1,15 +1,14 @@
 import { Controller, Get } from '@nestjs/common';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { ProfileType } from 'prisma/src/generated/prisma/enums';
+import { User } from '../auth/decorators/user.decorator';
+import { TokenPayload } from '../auth/auth.types';
 import { AnalyticsService } from './analytics.service';
 
-@Roles(ProfileType.Admin)
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('dashboard')
-  getDashboardStats() {
-    return this.analyticsService.getDashboardStats();
+  getDashboardStats(@User() user: TokenPayload) {
+    return this.analyticsService.getDashboardStats(user);
   }
 }

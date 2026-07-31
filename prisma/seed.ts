@@ -13,8 +13,7 @@ async function main() {
 
   const seedUsers = [
     { phone: '+251911111111', name: 'Super Admin', type: 'Admin' },
-    { phone: '+251922222222', name: 'Owner One', type: null },
-    { phone: '+251933333333', name: 'Owner Two', type: null },
+    { phone: '+251922222222', name: 'Owner One', type: 'Owner' },
   ];
 
   for (const user of seedUsers) {
