@@ -1,24 +1,29 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString, IsUUID, Min } from 'class-validator';
+import { IsNumber, IsUUID, Min } from 'class-validator';
 
 export class FallbackDto {
-  @ApiProperty() @IsUUID()
+  @ApiProperty()
+  @IsUUID()
   sectionId: string;
 
-  @ApiProperty() @IsUUID()
+  @ApiProperty()
+  @IsUUID()
   subjectId: string;
 
-  @ApiProperty() @IsUUID()
+  @ApiProperty()
+  @IsUUID()
   slotId: string;
 
-  @ApiProperty({ example: 'Term 1' })
-  @IsString() @IsNotEmpty()
-  term: string;
+  @ApiProperty({ description: 'Academic period (semester or term) ID' })
+  @IsUUID()
+  periodId: string;
 
-  @ApiProperty() @IsUUID()
+  @ApiProperty()
+  @IsUUID()
   studentId: string;
 
   @ApiProperty({ example: 75 })
-  @IsNumber() @Min(0)
+  @IsNumber()
+  @Min(0)
   score: number;
 }
