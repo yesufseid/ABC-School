@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { Decimal } from '@prisma/client/runtime/client';
+import { Prisma } from 'prisma/src/generated/prisma/client';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
 import { TokenPayload } from '../auth/auth.types';
 
@@ -14,6 +15,12 @@ type ListWidget = {
   title: string;
   columns: { key: string; label: string }[];
   rows: Record<string, string | number>[];
+};
+
+type ChartWidget = {
+  type: 'pie' | 'bar' | 'line';
+  title: string;
+  data: { name: string; value: number }[];
 };
 
 @Injectable()
@@ -139,6 +146,24 @@ export class AnalyticsService {
       ],
       plans: subscriptionsByPlan,
       recentSubscriptions: formattedRecent,
+      charts: [
+        {
+          type: 'bar',
+          title: 'Revenue by Plan',
+          data: subscriptionsByPlan.map((plan) => ({
+            name: plan.name,
+            value: plan.totalRevenue,
+          })),
+        },
+        {
+          type: 'pie',
+          title: 'Schools by Plan',
+          data: subscriptionsByPlan.map((plan) => ({
+            name: plan.name,
+            value: plan.tenantCount,
+          })),
+        },
+      ],
     };
   }
 
@@ -155,6 +180,8 @@ export class AnalyticsService {
       branches,
       sections,
       recentSubscriptions,
+      sexDemographics,
+      admissionsByMonth,
     ] = await Promise.all([
       this.databaseService.student.count({ where: { tenantId } }),
       this.databaseService.teacher.count({ where: { tenantId } }),
@@ -171,6 +198,8 @@ export class AnalyticsService {
           subscription: { select: { name: true } },
         },
       }),
+      this.sexDemographyChart('Students by Sex', { tenantId }),
+      this.admissionsByMonthChart('Admissions per Month', tenantId),
     ]);
 
     return {
@@ -189,6 +218,7 @@ export class AnalyticsService {
         endDate: ts.endDate.toISOString(),
         paidAmount: ts.paidAmount.toNumber(),
       })),
+      charts: [sexDemographics, admissionsByMonth],
     };
   }
 
@@ -199,7 +229,7 @@ export class AnalyticsService {
       throw new NotFoundException(`Principal is not linked to a branch`);
     }
 
-    const [students, teachers, sections, events, sectionsDetail] =
+    const [students, teachers, sections, events, sectionsDetail, sexDemographics] =
       await Promise.all([
         this.databaseService.studentGrade.count({ where: { branchId } }),
         this.databaseService.teacher.count({ where: { branchId } }),
@@ -212,6 +242,9 @@ export class AnalyticsService {
             _count: { select: { students: true } },
           },
         }),
+        this.sexDemographyChart('Students by Sex', {
+          grades: { some: { branchId } },
+        }),
       ]);
 
     return {
@@ -222,6 +255,17 @@ export class AnalyticsService {
         { id: 'events', label: 'Events', value: events },
       ],
       list: this.sectionList(sectionsDetail),
+      charts: [
+        sexDemographics,
+        {
+          type: 'bar',
+          title: 'Students by Section',
+          data: sectionsDetail.map((s) => ({
+            name: s.name,
+            value: s._count.students,
+          })),
+        },
+      ],
     };
   }
 
@@ -233,7 +277,7 @@ export class AnalyticsService {
     const now = new Date();
     const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-    const [students, enrolled, newThisYear, sections, recentAdmissions] =
+    const [students, enrolled, newThisYear, sections, recentAdmissions, sexDemographics, admissionsByMonth] =
       await Promise.all([
         this.databaseService.student.count({ where: { tenantId } }),
         this.databaseService.student.count({
@@ -256,6 +300,8 @@ export class AnalyticsService {
             status: true,
           },
         }),
+        this.sexDemographyChart('Students by Sex', { tenantId }),
+        this.admissionsByMonthChart('Admissions per Month', tenantId),
       ]);
 
     return {
@@ -280,6 +326,7 @@ export class AnalyticsService {
           status: s.status,
         })),
       },
+      charts: [sexDemographics, admissionsByMonth],
     };
   }
 
@@ -331,6 +378,16 @@ export class AnalyticsService {
           count: d._count._all,
         })),
       },
+      charts: [
+        {
+          type: 'bar',
+          title: 'Staff by Department',
+          data: byDepartment.map((d) => ({
+            name: d.department ?? 'Other',
+            value: d._count._all,
+          })),
+        },
+      ],
     };
   }
 
@@ -341,7 +398,7 @@ export class AnalyticsService {
 
     const { startOfDay, endOfDay } = this.dayBounds();
 
-    const [students, withdrawals, presentToday, totalToday, atRiskStudents] =
+    const [students, withdrawals, presentToday, totalToday, atRiskStudents, sexDemographics] =
       await Promise.all([
         this.databaseService.student.count({ where: { tenantId } }),
         this.databaseService.student.count({
@@ -368,6 +425,7 @@ export class AnalyticsService {
             status: true,
           },
         }),
+        this.sexDemographyChart('Students by Sex', { tenantId }),
       ]);
 
     const attendanceRate = totalToday
@@ -393,6 +451,7 @@ export class AnalyticsService {
           status: s.status,
         })),
       },
+      charts: [sexDemographics],
     };
   }
 
@@ -674,6 +733,49 @@ export class AnalyticsService {
         section: s.name,
         students: s._count.students,
       })),
+    };
+  }
+
+  private async sexDemographyChart(
+    title: string,
+    where: Prisma.StudentWhereInput,
+  ): Promise<ChartWidget> {
+    const groups = await this.databaseService.student.groupBy({
+      by: ['sex'],
+      where,
+      _count: { _all: true },
+    });
+
+    return {
+      type: 'pie',
+      title,
+      data: groups.map((g) => ({ name: g.sex, value: g._count._all })),
+    };
+  }
+
+  private async admissionsByMonthChart(
+    title: string,
+    tenantId: string,
+  ): Promise<ChartWidget> {
+    const students = await this.databaseService.student.findMany({
+      where: { tenantId },
+      select: { admissionDate: true },
+    });
+
+    const byMonth = new Map<string, number>();
+    for (const student of students) {
+      const key = student.admissionDate.toISOString().slice(0, 7);
+      byMonth.set(key, (byMonth.get(key) ?? 0) + 1);
+    }
+
+    const sorted = [...byMonth.entries()].sort(([a], [b]) =>
+      a.localeCompare(b),
+    );
+
+    return {
+      type: 'line',
+      title,
+      data: sorted.map(([name, value]) => ({ name, value })),
     };
   }
 

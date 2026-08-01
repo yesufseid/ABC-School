@@ -98,6 +98,21 @@ export class RegistrationController {
     );
   }
 
+  @Roles(ProfileType.Owner, ProfileType.Principal, ProfileType.Registrar)
+  @Get('parent')
+  findAllParents(@User('tenantId') tenantId: string) {
+    return this.registrationService.findAllParents(tenantId);
+  }
+
+  @Roles(ProfileType.Owner, ProfileType.Principal, ProfileType.Registrar)
+  @Get('parent/:id')
+  findOneParent(
+    @Param('id') id: string,
+    @User('tenantId') tenantId: string,
+  ) {
+    return this.registrationService.findOneParent(id, tenantId);
+  }
+
   // --- Section endpoints ---
 
   @Roles(ProfileType.Owner, ProfileType.Registrar)

@@ -42,6 +42,13 @@ export class DatabaseService
               'Branch',
               'Student',
               'Parent',
+              'StudentParent',
+              'StudentGrade',
+              'Subject',
+              'TeacherGrade',
+              'TeacherSubject',
+              'EventBranch',
+              'TimetableSlot',
             ];
 
             if (nonTenantSpecificModels.includes(model)) {
