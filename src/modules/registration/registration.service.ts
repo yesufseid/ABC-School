@@ -166,6 +166,36 @@ export class RegistrationService {
     return { data: parents };
   }
 
+  async findAllParents(tenantId: string) {
+    const parents = await this.databaseService.parent.findMany({
+      where: { tenantId },
+      include: {
+        _count: { select: { students: true } },
+      },
+      orderBy: { name: 'asc' },
+    });
+    return { data: parents };
+  }
+
+  async findOneParent(id: string, tenantId: string) {
+    const parent = await this.databaseService.parent.findFirst({
+      where: { id, tenantId },
+      include: {
+        profile: true,
+        students: {
+          include: {
+            student: {
+              omit: { password: true },
+              include: { profile: true },
+            },
+          },
+        },
+      },
+    });
+    if (!parent) throw new NotFoundException('Parent not found');
+    return { data: parent };
+  }
+
   async getConfirmation(id: string, tenantId: string) {
     const student = await this.databaseService.student.findFirst({
       where: { id, tenantId },
