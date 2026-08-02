@@ -1,20 +1,40 @@
 import {
-  Body, Controller, Delete, Get, Param, Patch, Post, Query, Req,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
 } from '@nestjs/common';
 import { AcademicsService } from './academics.service';
 import { RosterService } from './roster.service';
 import { GradingService } from './grading.service';
 import { AuditService } from './audit.service';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { User } from '../auth/decorators/user.decorator';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
 import { TokenPayload } from '../auth/auth.types';
-import { CreateAssessmentSlotDto, UpdateAssessmentSlotDto, CreateSlotWindowDto, UpdateSlotWindowDto } from './dtos/assessment-slot.dto';
+import {
+  CreateAssessmentSlotDto,
+  UpdateAssessmentSlotDto,
+  CreateSlotWindowDto,
+  UpdateSlotWindowDto,
+} from './dtos/assessment-slot.dto';
 import { GradebookEntryBatchDto } from './dtos/gradebook-entry.dto';
 import { SubmitResultsDto } from './dtos/submit-results.dto';
 import { FallbackDto } from './dtos/fallback.dto';
-import { ApproveRosterDto, RejectRosterDto, PublishRosterDto } from './dtos/roster-action.dto';
-import { CorrectionRequestDto, ApproveCorrectionDto, RejectCorrectionDto } from './dtos/correction.dto';
-import { CreateGradingRuleDto, UpdateGradingRuleDto } from './dtos/grading-rule.dto';
+import { RejectRosterDto, PublishRosterDto } from './dtos/roster-action.dto';
+import {
+  CorrectionRequestDto,
+  RejectCorrectionDto,
+} from './dtos/correction.dto';
+import {
+  CreateGradingRuleDto,
+  UpdateGradingRuleDto,
+} from './dtos/grading-rule.dto';
 
 @Controller('academics')
 export class AcademicsController {
@@ -82,7 +102,13 @@ export class AcademicsController {
   @Roles(ProfileType.Principal)
   @Post('config/assignments')
   assignTeacher(
-    @Body() dto: { teacherId: string; sectionId: string; subjectId: string; isHomeroom?: boolean },
+    @Body()
+    dto: {
+      teacherId: string;
+      sectionId: string;
+      subjectId: string;
+      isHomeroom?: boolean;
+    },
   ) {
     return this.academicsService.assignTeacher(dto);
   }
@@ -135,14 +161,20 @@ export class AcademicsController {
 
   @Roles(ProfileType.Teacher, ProfileType.Principal)
   @Post('results/entry')
-  gradebookEntry(@Body() dto: GradebookEntryBatchDto, @Req() req: { user: TokenPayload }) {
-    return this.academicsService.gradebookEntry(dto, req.user.profileId!);
+  gradebookEntry(
+    @Body() dto: GradebookEntryBatchDto,
+    @User() user: TokenPayload,
+  ) {
+    return this.academicsService.gradebookEntry(dto, user);
   }
 
   @Roles(ProfileType.Teacher, ProfileType.Principal)
   @Post('results/submit')
-  submitResults(@Body() dto: SubmitResultsDto, @Req() req: { user: TokenPayload }) {
-    return this.academicsService.submitResults(dto, req.user.profileId!);
+  submitResults(
+    @Body() dto: SubmitResultsDto,
+    @User() user: TokenPayload,
+  ) {
+    return this.academicsService.submitResults(dto, user);
   }
 
   @Roles(ProfileType.Teacher, ProfileType.Principal, ProfileType.VicePrincipal)
@@ -151,9 +183,16 @@ export class AcademicsController {
     @Param('sectionId') sectionId: string,
     @Query('subjectId') subjectId: string,
     @Query('slotId') slotId: string,
-    @Query('term') term: string,
+    @Query('periodId') periodId: string,
+    @User() user: TokenPayload,
   ) {
-    return this.academicsService.getGradebook(sectionId, subjectId, slotId, term);
+    return this.academicsService.getGradebook(
+      sectionId,
+      subjectId,
+      slotId,
+      periodId,
+      user,
+    );
   }
 
   @Roles(ProfileType.VicePrincipal)
@@ -184,7 +223,10 @@ export class AcademicsController {
 
   @Roles(ProfileType.Principal)
   @Post('rosters/publish')
-  publishRoster(@Body() dto: PublishRosterDto, @Req() req: { user: TokenPayload }) {
+  publishRoster(
+    @Body() dto: PublishRosterDto,
+    @Req() req: { user: TokenPayload },
+  ) {
     return this.rosterService.publish(dto, req.user.profileId!);
   }
 
@@ -192,8 +234,11 @@ export class AcademicsController {
 
   @Roles(ProfileType.Teacher, ProfileType.Principal)
   @Post('corrections')
-  requestCorrection(@Body() dto: CorrectionRequestDto, @Req() req: { user: TokenPayload }) {
-    return this.academicsService.requestCorrection(dto, req.user.profileId!);
+  requestCorrection(
+    @Body() dto: CorrectionRequestDto,
+    @User() user: TokenPayload,
+  ) {
+    return this.academicsService.requestCorrection(dto, user);
   }
 
   @Roles(ProfileType.Principal)
@@ -204,7 +249,10 @@ export class AcademicsController {
 
   @Roles(ProfileType.Principal)
   @Post('corrections/:id/approve')
-  approveCorrection(@Param('id') id: string, @Req() req: { user: TokenPayload }) {
+  approveCorrection(
+    @Param('id') id: string,
+    @Req() req: { user: TokenPayload },
+  ) {
     return this.academicsService.approveCorrection(id, req.user.profileId!);
   }
 
@@ -228,7 +276,13 @@ export class AcademicsController {
     @Query('limit') limit?: string,
   ) {
     return this.auditService.findAll({
-      action, branchId, sectionId, studentId, dateFrom, dateTo, limit: limit ? parseInt(limit) : undefined,
+      action,
+      branchId,
+      sectionId,
+      studentId,
+      dateFrom,
+      dateTo,
+      limit: limit ? parseInt(limit) : undefined,
     });
   }
 
@@ -238,9 +292,9 @@ export class AcademicsController {
   @Get('completion/:sectionId')
   checkCompletion(
     @Param('sectionId') sectionId: string,
-    @Query('term') term: string,
+    @Query('periodId') periodId: string,
   ) {
-    return this.rosterService.checkCompletion(sectionId, term);
+    return this.rosterService.checkCompletion(sectionId, periodId);
   }
 
   // ── Roster Generation (manual trigger) ──
@@ -249,9 +303,8 @@ export class AcademicsController {
   @Post('rosters/generate/:sectionId')
   generateRoster(
     @Param('sectionId') sectionId: string,
-    @Query('term') term: string,
-    @Query('year') year: string,
+    @Query('periodId') periodId: string,
   ) {
-    return this.rosterService.generateRoster(sectionId, term, year);
+    return this.rosterService.generateRoster(sectionId, periodId);
   }
 }

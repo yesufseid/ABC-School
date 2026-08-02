@@ -1,29 +1,39 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min, ValidateNested } from 'class-validator';
-
+import {
+  IsArray,
+  IsNumber,
+  IsUUID,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 export class GradebookEntryItem {
-  @ApiProperty() @IsUUID()
+  @ApiProperty()
+  @IsUUID()
   studentId: string;
 
   @ApiProperty({ example: 85 })
-  @IsNumber() @Min(0)
+  @IsNumber()
+  @Min(0)
   score: number;
 }
 
 export class GradebookEntryBatchDto {
-  @ApiProperty() @IsUUID()
+  @ApiProperty()
+  @IsUUID()
   sectionId: string;
 
-  @ApiProperty() @IsUUID()
+  @ApiProperty()
+  @IsUUID()
   subjectId: string;
 
-  @ApiProperty() @IsUUID()
+  @ApiProperty()
+  @IsUUID()
   slotId: string;
 
-  @ApiProperty({ example: 'Term 1' })
-  @IsString() @IsNotEmpty()
-  term: string;
+  @ApiProperty({ description: 'Academic period (semester or term) ID' })
+  @IsUUID()
+  periodId: string;
 
   @ApiProperty({ type: [GradebookEntryItem] })
   @IsArray()

@@ -9,8 +9,10 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { REQUEST_TENANT_ID } from '../auth/auth.constants';
+import { TeacherScopeService } from '../teacher/teacher-scope.service';
+import { TokenPayload } from '../auth/auth.types';
 import { GenerateTimetableDto } from './dtos/generate-timetable.dto';
-import { DayOfWeek, TimetableStatus } from 'prisma/src/generated/prisma/enums';
+import { DayOfWeek, ProfileType, TimetableStatus } from 'prisma/src/generated/prisma/enums';
 
 interface TenantSettings {
   workingDays?: string[];
@@ -27,6 +29,7 @@ export class TimetableService {
       TransactionalAdapterPrisma<DatabaseService>
     >,
     private readonly databaseService: DatabaseService,
+    private readonly teacherScopeService: TeacherScopeService,
   ) {}
 
   @Transactional()
@@ -268,11 +271,21 @@ export class TimetableService {
     };
   }
 
-  async findAll(query: { sectionId?: string; year?: string }) {
+  async findAll(
+    query: { sectionId?: string; year?: string },
+    user?: TokenPayload,
+  ) {
     const tenantId = this.getTenantId();
     const where: any = { tenantId };
 
-    if (query.sectionId) where.sectionId = query.sectionId;
+    if (user?.type === ProfileType.Teacher) {
+      const assignments =
+        await this.teacherScopeService.getMyAssignments(user.profileId);
+      const sectionIds = [...new Set(assignments.map((a) => a.sectionId))];
+      where.sectionId = { in: sectionIds };
+    } else if (query.sectionId) {
+      where.sectionId = query.sectionId;
+    }
     if (query.year) where.year = query.year;
 
     const timetables = await this.databaseService.timetable.findMany({
@@ -287,7 +300,7 @@ export class TimetableService {
     return { data: timetables };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user?: TokenPayload) {
     const tenantId = this.getTenantId();
     const timetable = await this.databaseService.timetable.findFirst({
       where: { id, tenantId },
@@ -300,6 +313,14 @@ export class TimetableService {
       },
     });
     if (!timetable) throw new NotFoundException('Timetable not found');
+
+    if (user?.type === ProfileType.Teacher) {
+      await this.teacherScopeService.assertSectionAccess(
+        user,
+        timetable.sectionId,
+      );
+    }
+
     return { data: timetable };
   }
 
@@ -353,8 +374,13 @@ export class TimetableService {
     return { message: 'Timetable deleted successfully' };
   }
 
-  async getTeacherLoad(sectionId: string, year: string) {
+  async getTeacherLoad(sectionId: string, year: string, user?: TokenPayload) {
     const tenantId = this.getTenantId();
+
+    if (user?.type === ProfileType.Teacher) {
+      await this.teacherScopeService.assertSectionAccess(user, sectionId);
+    }
+
     const timetable = await this.databaseService.timetable.findFirst({
       where: {
         sectionId,

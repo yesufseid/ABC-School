@@ -10,7 +10,9 @@ import {
 import { TimetableService } from './timetable.service';
 import { GenerateTimetableDto } from './dtos/generate-timetable.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { User } from '../auth/decorators/user.decorator';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
+import { TokenPayload } from '../auth/auth.types';
 
 @Controller('schedule/timetable')
 export class TimetableController {
@@ -31,8 +33,9 @@ export class TimetableController {
   findAll(
     @Query('sectionId') sectionId?: string,
     @Query('year') year?: string,
+    @User() user?: TokenPayload,
   ) {
-    return this.timetableService.findAll({ sectionId, year });
+    return this.timetableService.findAll({ sectionId, year }, user);
   }
 
   @Roles(
@@ -44,8 +47,9 @@ export class TimetableController {
   getTeacherLoad(
     @Query('sectionId') sectionId: string,
     @Query('year') year: string,
+    @User() user?: TokenPayload,
   ) {
-    return this.timetableService.getTeacherLoad(sectionId, year);
+    return this.timetableService.getTeacherLoad(sectionId, year, user);
   }
 
   @Roles(
@@ -54,8 +58,8 @@ export class TimetableController {
     ProfileType.Teacher,
   )
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.timetableService.findOne(id);
+  findOne(@Param('id') id: string, @User() user?: TokenPayload) {
+    return this.timetableService.findOne(id, user);
   }
 
   @Roles(ProfileType.Owner, ProfileType.Registrar)

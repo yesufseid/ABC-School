@@ -6,12 +6,12 @@ import {
   Patch,
   Post,
   Query,
-  Req,
 } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { TakeAttendanceDto, AttendanceEntryDto } from './dtos/take-attendance.dto';
 import { CorrectAttendanceDto } from './dtos/correct-attendance.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { User } from '../auth/decorators/user.decorator';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
 import { TokenPayload } from '../auth/auth.types';
 
@@ -26,8 +26,8 @@ export class AttendanceController {
     ProfileType.Registrar,
   )
   @Post()
-  take(@Body() dto: TakeAttendanceDto, @Req() req: { user: TokenPayload }) {
-    return this.attendanceService.take(dto, req.user.profileId!);
+  take(@Body() dto: TakeAttendanceDto, @User() user: TokenPayload) {
+    return this.attendanceService.take(dto, user);
   }
 
   @Roles(
@@ -41,8 +41,9 @@ export class AttendanceController {
   getSectionSheet(
     @Param('sectionId') sectionId: string,
     @Param('date') date: string,
+    @User() user: TokenPayload,
   ) {
-    return this.attendanceService.getSectionSheet(sectionId, date);
+    return this.attendanceService.getSectionSheet(sectionId, date, user);
   }
 
   @Roles(
@@ -89,12 +90,12 @@ export class AttendanceController {
   directEdit(
     @Param('id') id: string,
     @Body() dto: AttendanceEntryDto,
-    @Req() req: { user: TokenPayload },
+    @User() user: TokenPayload,
   ) {
     return this.attendanceService.directEdit(
       id,
       { status: dto.status, note: dto.note },
-      req.user.profileId!,
+      user,
     );
   }
 
@@ -108,8 +109,8 @@ export class AttendanceController {
   correct(
     @Param('id') id: string,
     @Body() dto: CorrectAttendanceDto,
-    @Req() req: { user: TokenPayload },
+    @User() user: TokenPayload,
   ) {
-    return this.attendanceService.correct(id, dto, req.user.profileId!);
+    return this.attendanceService.correct(id, dto, user);
   }
 }

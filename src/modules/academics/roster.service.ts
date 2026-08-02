@@ -1,11 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { Transactional, TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { DatabaseService } from '../database/database.service';
 import { REQUEST_TENANT_ID } from '../auth/auth.constants';
 import { AuditService } from './audit.service';
-import { RosterStatus, AcademicResultStatus, GradeCycle } from 'prisma/src/generated/prisma/enums';
+import {
+  RosterStatus,
+  AcademicResultStatus,
+  GradeCycle,
+} from 'prisma/src/generated/prisma/enums';
 
 @Injectable()
 export class RosterService {
@@ -18,7 +26,7 @@ export class RosterService {
     private readonly auditService: AuditService,
   ) {}
 
-  async checkCompletion(sectionId: string, term: string) {
+  async checkCompletion(sectionId: string, periodId: string) {
     const tenantId = this.getTenantId();
 
     const section = await this.databaseService.section.findFirst({
@@ -50,7 +58,7 @@ export class RosterService {
             sectionId,
             subjectId: subject.id,
             slotId: slot.id,
-            term,
+            periodId,
             status: AcademicResultStatus.SUBMITTED,
             tenantId,
           },
@@ -59,7 +67,11 @@ export class RosterService {
         if (filledCount < enrolledStudents) {
           missing.push(`${subject.name} - ${slot.name}`);
         } else {
-          results.push({ subjectId: subject.id, slotId: slot.id, status: 'COMPLETE' });
+          results.push({
+            subjectId: subject.id,
+            slotId: slot.id,
+            status: 'COMPLETE',
+          });
         }
       }
     }
@@ -68,11 +80,11 @@ export class RosterService {
   }
 
   @Transactional()
-  async generateRoster(sectionId: string, term: string, year: string) {
+  async generateRoster(sectionId: string, periodId: string) {
     const tenantId = this.getTenantId();
 
     const existing = await this.db.tx.academicRoster.findUnique({
-      where: { sectionId_term_year: { sectionId, term, year } },
+      where: { sectionId_periodId: { sectionId, periodId } },
     });
 
     if (existing && existing.status !== RosterStatus.BUILDING) {
@@ -81,7 +93,7 @@ export class RosterService {
       );
     }
 
-    const completion = await this.checkCompletion(sectionId, term);
+    const completion = await this.checkCompletion(sectionId, periodId);
     if (!completion.complete) {
       throw new BadRequestException(
         `Cannot generate roster: incomplete slots: ${completion.missing.join(', ')}`,
@@ -99,8 +111,7 @@ export class RosterService {
     const roster = await this.db.tx.academicRoster.create({
       data: {
         sectionId,
-        term,
-        year,
+        periodId,
         status: RosterStatus.COMPLETE,
         tenantId,
       },
@@ -114,7 +125,10 @@ export class RosterService {
     const roster = await this.databaseService.academicRoster.findFirst({
       where: { sectionId, tenantId },
       orderBy: { createdAt: 'desc' },
-      include: { section: { include: { grade: true } } },
+      include: {
+        section: { include: { grade: true } },
+        period: { include: { academicYear: true } },
+      },
     });
 
     if (!roster) {
@@ -137,7 +151,7 @@ export class RosterService {
     const results = await this.databaseService.academicResult.findMany({
       where: {
         sectionId,
-        term: roster.term,
+        periodId: roster.periodId,
         tenantId,
       },
       orderBy: { createdAt: 'desc' },
@@ -161,7 +175,9 @@ export class RosterService {
       for (const subject of subjects) {
         let total = 0;
         for (const slot of slots) {
-          const score = effectiveMap.get(`${sg.student.id}_${subject.id}_${slot.id}`) ?? null;
+          const score =
+            effectiveMap.get(`${sg.student.id}_${subject.id}_${slot.id}`) ??
+            null;
           row[`${subject.name}_${slot.name}`] = score;
           if (score !== null) total += score;
         }
@@ -235,14 +251,16 @@ export class RosterService {
   }
 
   @Transactional()
-  async publish(dto: { sectionIds: string[]; term: string; year: string }, publishedBy: string) {
+  async publish(
+    dto: { sectionIds: string[]; periodId: string },
+    publishedBy: string,
+  ) {
     const tenantId = this.getTenantId();
 
     const result = await this.db.tx.academicRoster.updateMany({
       where: {
         sectionId: { in: dto.sectionIds },
-        term: dto.term,
-        year: dto.year,
+        periodId: dto.periodId,
         status: RosterStatus.APPROVED,
         tenantId,
       },

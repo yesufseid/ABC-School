@@ -32,7 +32,70 @@ enum CorrectionRequestStatus {
   REJECTED
 }
 
+enum AcademicCalendarType {
+  SEMESTER
+  TERM
+}
+
+enum AcademicPeriodType {
+  SEMESTER
+  TERM
+}
+
+enum AcademicYearStatus {
+  ACTIVE
+  COMPLETED
+  CLOSED
+}
+
 // --- Models ---
+
+model AcademicYear {
+  id          String               @id @default(uuid())
+  name        String
+  calendarType AcademicCalendarType @map("calendar_type")
+  startDate   DateTime             @map("start_date")
+  endDate     DateTime             @map("end_date")
+  status      AcademicYearStatus   @default(ACTIVE)
+  isCurrent   Boolean              @default(false) @map("is_current")
+
+  periods AcademicPeriod[]
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("academic_years")
+}
+
+model AcademicPeriod {
+  id       String             @id @default(uuid())
+  name     String
+  sequence Int
+  type     AcademicPeriodType
+  startDate DateTime          @map("start_date")
+  endDate   DateTime          @map("end_date")
+
+  academicYearId String @map("academic_year_id")
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+
+  academicResults AcademicResult[]
+  academicRosters AcademicRoster[]
+
+  tenantId String @map("tenant_id")
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([academicYearId, sequence])
+  @@index([tenantId])
+  @@map("academic_periods")
+}
 
 model AssessmentSlot {
   id        String            @id @default(uuid())
@@ -103,7 +166,8 @@ model AcademicResult {
   score  Float
   status AcademicResultStatus @default(DRAFT)
 
-  term      String
+  periodId String @map("period_id")
+  period   AcademicPeriod @relation(fields: [periodId], references: [id])
   studentId String @map("student_id")
   student   Student @relation(fields: [studentId], references: [id])
   subjectId String @map("subject_id")
@@ -127,16 +191,17 @@ model AcademicResult {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@index([sectionId, subjectId, slotId, term])
+  @@index([sectionId, subjectId, slotId, periodId])
   @@index([studentId])
   @@map("academic_results")
 }
 
 model AcademicRoster {
   id     String       @id @default(uuid())
-  term   String
-  year   String
   status RosterStatus @default(BUILDING)
+
+  periodId String @map("period_id")
+  period   AcademicPeriod @relation(fields: [periodId], references: [id])
 
   sectionId String @map("section_id")
   section   Section @relation(fields: [sectionId], references: [id])
@@ -151,7 +216,7 @@ model AcademicRoster {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([sectionId, term, year])
+  @@unique([sectionId, periodId])
   @@map("academic_rosters")
 }
 

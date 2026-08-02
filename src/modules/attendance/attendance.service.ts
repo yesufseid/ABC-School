@@ -8,6 +8,8 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { REQUEST_TENANT_ID } from '../auth/auth.constants';
+import { TeacherScopeService } from '../teacher/teacher-scope.service';
+import { TokenPayload } from '../auth/auth.types';
 import { TakeAttendanceDto } from './dtos/take-attendance.dto';
 import { CorrectAttendanceDto } from './dtos/correct-attendance.dto';
 
@@ -19,11 +21,14 @@ export class AttendanceService {
       TransactionalAdapterPrisma<DatabaseService>
     >,
     private readonly databaseService: DatabaseService,
+    private readonly teacherScopeService: TeacherScopeService,
   ) {}
 
   @Transactional()
-  async take(dto: TakeAttendanceDto, markedBy: string) {
+  async take(dto: TakeAttendanceDto, user: TokenPayload) {
     const tenantId = this.getTenantId();
+
+    await this.teacherScopeService.assertSectionAccess(user, dto.sectionId);
 
     const section = await this.db.tx.section.findFirst({
       where: { id: dto.sectionId, tenantId },
@@ -59,7 +64,7 @@ export class AttendanceService {
       if (existing) {
         await this.db.tx.attendanceRecord.update({
           where: { id: existing.id },
-          data: { status: entry.status, note: entry.note, markedBy },
+          data: { status: entry.status, note: entry.note, markedBy: user.profileId! },
         });
       } else {
         await this.db.tx.attendanceRecord.create({
@@ -69,18 +74,20 @@ export class AttendanceService {
             note: entry.note,
             studentId: entry.studentId,
             sectionId: dto.sectionId,
-            markedBy,
+            markedBy: user.profileId!,
             tenantId,
           },
         });
       }
     }
 
-    return this.getSectionSheet(dto.sectionId, dto.date);
+    return this.getSectionSheet(dto.sectionId, dto.date, user);
   }
 
-  async getSectionSheet(sectionId: string, dateStr: string) {
+  async getSectionSheet(sectionId: string, dateStr: string, user?: TokenPayload) {
     const tenantId = this.getTenantId();
+
+    await this.teacherScopeService.assertSectionAccess(user!, sectionId);
 
     const section = await this.databaseService.section.findFirst({
       where: { id: sectionId, tenantId },
@@ -259,13 +266,15 @@ export class AttendanceService {
   async directEdit(
     id: string,
     dto: { status: string; note?: string },
-    profileId: string,
+    user: TokenPayload,
   ) {
     const tenantId = this.getTenantId();
     const record = await this.db.tx.attendanceRecord.findFirst({
       where: { id, tenantId, originalRecordId: null },
     });
     if (!record) throw new NotFoundException('Attendance record not found');
+
+    await this.teacherScopeService.assertSectionAccess(user, record.sectionId);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -280,7 +289,7 @@ export class AttendanceService {
 
     const updated = await this.db.tx.attendanceRecord.update({
       where: { id },
-      data: { status: dto.status as any, note: dto.note, markedBy: profileId },
+      data: { status: dto.status as any, note: dto.note, markedBy: user.profileId! },
     });
 
     return { data: updated };
@@ -290,13 +299,15 @@ export class AttendanceService {
   async correct(
     id: string,
     dto: CorrectAttendanceDto,
-    correctedBy: string,
+    user: TokenPayload,
   ) {
     const tenantId = this.getTenantId();
     const original = await this.db.tx.attendanceRecord.findFirst({
       where: { id, tenantId, originalRecordId: null },
     });
     if (!original) throw new NotFoundException('Original attendance record not found');
+
+    await this.teacherScopeService.assertSectionAccess(user, original.sectionId);
 
     const daysSince = Math.floor(
       (Date.now() - original.createdAt.getTime()) / (1000 * 60 * 60 * 24),
@@ -318,7 +329,7 @@ export class AttendanceService {
         markedBy: original.markedBy,
         originalRecordId: original.id,
         correctionReason: dto.reason,
-        correctedBy,
+        correctedBy: user.profileId!,
         tenantId,
       },
     });

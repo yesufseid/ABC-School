@@ -1,16 +1,27 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { Transactional, TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { DatabaseService } from '../database/database.service';
 import { REQUEST_TENANT_ID } from '../auth/auth.constants';
+import { TeacherScopeService } from '../teacher/teacher-scope.service';
+import { TokenPayload } from '../auth/auth.types';
 import { AuditService } from './audit.service';
 import { RosterService } from './roster.service';
 import { GradebookEntryBatchDto } from './dtos/gradebook-entry.dto';
 import { SubmitResultsDto } from './dtos/submit-results.dto';
 import { FallbackDto } from './dtos/fallback.dto';
-import { CreateAssessmentSlotDto, UpdateAssessmentSlotDto, CreateSlotWindowDto, UpdateSlotWindowDto } from './dtos/assessment-slot.dto';
-import { AcademicResultStatus } from 'prisma/src/generated/prisma/enums';
+import {
+  CreateAssessmentSlotDto,
+  UpdateAssessmentSlotDto,
+  CreateSlotWindowDto,
+  UpdateSlotWindowDto,
+} from './dtos/assessment-slot.dto';
+import { AcademicResultStatus, ProfileType } from 'prisma/src/generated/prisma/enums';
 
 @Injectable()
 export class AcademicsService {
@@ -22,6 +33,7 @@ export class AcademicsService {
     private readonly databaseService: DatabaseService,
     private readonly auditService: AuditService,
     private readonly rosterService: RosterService,
+    private readonly teacherScopeService: TeacherScopeService,
   ) {}
 
   // ── Slot CRUD ──
@@ -86,10 +98,14 @@ export class AcademicsService {
     const tenantId = this.getTenantId();
 
     const existing = await this.db.tx.assessmentSlotWindow.findUnique({
-      where: { slotId_branchId: { slotId: dto.slotId, branchId: dto.branchId } },
+      where: {
+        slotId_branchId: { slotId: dto.slotId, branchId: dto.branchId },
+      },
     });
     if (existing) {
-      throw new BadRequestException('Window already exists for this slot+branch');
+      throw new BadRequestException(
+        'Window already exists for this slot+branch',
+      );
     }
 
     const window = await this.db.tx.assessmentSlotWindow.create({
@@ -99,8 +115,12 @@ export class AcademicsService {
         isScheduled: dto.isScheduled,
         startDate: dto.startDate ? new Date(dto.startDate) : null,
         endDate: dto.endDate ? new Date(dto.endDate) : null,
-        assessmentPeriodStart: dto.assessmentPeriodStart ? new Date(dto.assessmentPeriodStart) : null,
-        assessmentPeriodEnd: dto.assessmentPeriodEnd ? new Date(dto.assessmentPeriodEnd) : null,
+        assessmentPeriodStart: dto.assessmentPeriodStart
+          ? new Date(dto.assessmentPeriodStart)
+          : null,
+        assessmentPeriodEnd: dto.assessmentPeriodEnd
+          ? new Date(dto.assessmentPeriodEnd)
+          : null,
         tenantId,
       },
     });
@@ -129,10 +149,18 @@ export class AcademicsService {
 
     const data: any = {};
     if (dto.isScheduled !== undefined) data.isScheduled = dto.isScheduled;
-    if (dto.startDate !== undefined) data.startDate = dto.startDate ? new Date(dto.startDate) : null;
-    if (dto.endDate !== undefined) data.endDate = dto.endDate ? new Date(dto.endDate) : null;
-    if (dto.assessmentPeriodStart !== undefined) data.assessmentPeriodStart = dto.assessmentPeriodStart ? new Date(dto.assessmentPeriodStart) : null;
-    if (dto.assessmentPeriodEnd !== undefined) data.assessmentPeriodEnd = dto.assessmentPeriodEnd ? new Date(dto.assessmentPeriodEnd) : null;
+    if (dto.startDate !== undefined)
+      data.startDate = dto.startDate ? new Date(dto.startDate) : null;
+    if (dto.endDate !== undefined)
+      data.endDate = dto.endDate ? new Date(dto.endDate) : null;
+    if (dto.assessmentPeriodStart !== undefined)
+      data.assessmentPeriodStart = dto.assessmentPeriodStart
+        ? new Date(dto.assessmentPeriodStart)
+        : null;
+    if (dto.assessmentPeriodEnd !== undefined)
+      data.assessmentPeriodEnd = dto.assessmentPeriodEnd
+        ? new Date(dto.assessmentPeriodEnd)
+        : null;
 
     const updated = await this.db.tx.assessmentSlotWindow.update({
       where: { id },
@@ -144,14 +172,26 @@ export class AcademicsService {
   // ── Teacher Assignment ──
 
   @Transactional()
-  async assignTeacher(dto: { teacherId: string; sectionId: string; subjectId: string; isHomeroom?: boolean }) {
+  async assignTeacher(dto: {
+    teacherId: string;
+    sectionId: string;
+    subjectId: string;
+    isHomeroom?: boolean;
+  }) {
     const tenantId = this.getTenantId();
 
     const existing = await this.db.tx.teacherSectionSubject.findUnique({
-      where: { sectionId_subjectId: { sectionId: dto.sectionId, subjectId: dto.subjectId } },
+      where: {
+        sectionId_subjectId: {
+          sectionId: dto.sectionId,
+          subjectId: dto.subjectId,
+        },
+      },
     });
     if (existing) {
-      throw new BadRequestException('This subject already has a teacher assigned in this section');
+      throw new BadRequestException(
+        'This subject already has a teacher assigned in this section',
+      );
     }
 
     const assignment = await this.db.tx.teacherSectionSubject.create({
@@ -173,11 +213,12 @@ export class AcademicsService {
     const where: any = { tenantId };
     if (sectionId) where.sectionId = sectionId;
 
-    const assignments = await this.databaseService.teacherSectionSubject.findMany({
-      where,
-      include: { teacher: true, section: true, subject: true },
-      orderBy: { sectionId: 'asc' },
-    });
+    const assignments =
+      await this.databaseService.teacherSectionSubject.findMany({
+        where,
+        include: { teacher: true, section: true, subject: true },
+        orderBy: { sectionId: 'asc' },
+      });
     return { data: assignments };
   }
 
@@ -195,8 +236,16 @@ export class AcademicsService {
   // ── Gradebook Entry ──
 
   @Transactional()
-  async gradebookEntry(dto: GradebookEntryBatchDto, profileId: string) {
+  async gradebookEntry(dto: GradebookEntryBatchDto, user: TokenPayload) {
     const tenantId = this.getTenantId();
+
+    await this.teacherScopeService.assertSectionSubjectAccess(
+      user,
+      dto.sectionId,
+      dto.subjectId,
+    );
+
+    await this.assertPeriod(dto.periodId);
 
     const section = await this.db.tx.section.findFirst({
       where: { id: dto.sectionId, tenantId },
@@ -208,7 +257,9 @@ export class AcademicsService {
       where: { studentId: { in: studentIds }, sectionId: dto.sectionId },
     });
     if (enrolledCount !== studentIds.length) {
-      throw new BadRequestException('One or more students not enrolled in this section');
+      throw new BadRequestException(
+        'One or more students not enrolled in this section',
+      );
     }
 
     for (const entry of dto.entries) {
@@ -218,7 +269,7 @@ export class AcademicsService {
           subjectId: dto.subjectId,
           slotId: dto.slotId,
           sectionId: dto.sectionId,
-          term: dto.term,
+          periodId: dto.periodId,
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -241,7 +292,7 @@ export class AcademicsService {
           data: {
             score: entry.score,
             status: AcademicResultStatus.DRAFT,
-            term: dto.term,
+            periodId: dto.periodId,
             studentId: entry.studentId,
             subjectId: dto.subjectId,
             slotId: dto.slotId,
@@ -253,7 +304,7 @@ export class AcademicsService {
 
       await this.auditService.log({
         action: previousValue === null ? 'SCORE_CREATE' : 'SCORE_UPDATE',
-        performedBy: profileId,
+        performedBy: user.profileId!,
         performedByRole: 'Teacher',
         branchId: section.branchId,
         sectionId: dto.sectionId,
@@ -265,11 +316,29 @@ export class AcademicsService {
       });
     }
 
-    return this.getGradebook(dto.sectionId, dto.subjectId, dto.slotId, dto.term);
+    return this.getGradebook(
+      dto.sectionId,
+      dto.subjectId,
+      dto.slotId,
+      dto.periodId,
+      user,
+    );
   }
 
-  async getGradebook(sectionId: string, subjectId: string, slotId: string, term: string) {
+  async getGradebook(
+    sectionId: string,
+    subjectId: string,
+    slotId: string,
+    periodId: string,
+    user?: TokenPayload,
+  ) {
     const tenantId = this.getTenantId();
+
+    await this.teacherScopeService.assertSectionSubjectAccess(
+      user!,
+      sectionId,
+      subjectId,
+    );
 
     const students = await this.databaseService.studentGrade.findMany({
       where: { sectionId },
@@ -279,7 +348,11 @@ export class AcademicsService {
 
     const results = await this.databaseService.academicResult.findMany({
       where: {
-        sectionId, subjectId, slotId, term, tenantId,
+        sectionId,
+        subjectId,
+        slotId,
+        periodId,
+        tenantId,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -304,12 +377,20 @@ export class AcademicsService {
       };
     });
 
-    return { data: { sectionId, subjectId, slotId, term, entries: rows } };
+    return { data: { sectionId, subjectId, slotId, periodId, entries: rows } };
   }
 
   @Transactional()
-  async submitResults(dto: SubmitResultsDto, profileId: string) {
+  async submitResults(dto: SubmitResultsDto, user: TokenPayload) {
     const tenantId = this.getTenantId();
+
+    await this.teacherScopeService.assertSectionSubjectAccess(
+      user,
+      dto.sectionId,
+      dto.subjectId,
+    );
+
+    await this.assertPeriod(dto.periodId);
 
     const section = await this.db.tx.section.findFirst({
       where: { id: dto.sectionId, tenantId },
@@ -321,7 +402,7 @@ export class AcademicsService {
         sectionId: dto.sectionId,
         subjectId: dto.subjectId,
         slotId: dto.slotId,
-        term: dto.term,
+        periodId: dto.periodId,
         status: AcademicResultStatus.DRAFT,
         tenantId,
       },
@@ -337,14 +418,14 @@ export class AcademicsService {
       },
       data: {
         status: AcademicResultStatus.SUBMITTED,
-        submittedBy: profileId,
+        submittedBy: user.profileId!,
         submittedAt: new Date(),
       },
     });
 
     await this.auditService.log({
       action: 'SCORE_SUBMIT',
-      performedBy: profileId,
+      performedBy: user.profileId!,
       performedByRole: 'Teacher',
       branchId: section.branchId,
       sectionId: dto.sectionId,
@@ -352,17 +433,28 @@ export class AcademicsService {
       slotId: dto.slotId,
     });
 
-    const completion = await this.rosterService.checkCompletion(dto.sectionId, dto.term);
+    const completion = await this.rosterService.checkCompletion(
+      dto.sectionId,
+      dto.periodId,
+    );
     if (completion.complete) {
-      await this.rosterService.generateRoster(dto.sectionId, dto.term, section.year);
+      await this.rosterService.generateRoster(dto.sectionId, dto.periodId);
     }
 
-    return this.getGradebook(dto.sectionId, dto.subjectId, dto.slotId, dto.term);
+    return this.getGradebook(
+      dto.sectionId,
+      dto.subjectId,
+      dto.slotId,
+      dto.periodId,
+      user,
+    );
   }
 
   @Transactional()
   async vpFallback(dto: FallbackDto, profileId: string) {
     const tenantId = this.getTenantId();
+
+    await this.assertPeriod(dto.periodId);
 
     const section = await this.db.tx.section.findFirst({
       where: { id: dto.sectionId, tenantId },
@@ -375,7 +467,7 @@ export class AcademicsService {
         subjectId: dto.subjectId,
         slotId: dto.slotId,
         sectionId: dto.sectionId,
-        term: dto.term,
+        periodId: dto.periodId,
         tenantId,
       },
       orderBy: { createdAt: 'desc' },
@@ -402,7 +494,7 @@ export class AcademicsService {
         data: {
           score: dto.score,
           status: AcademicResultStatus.SUBMITTED,
-          term: dto.term,
+          periodId: dto.periodId,
           studentId: dto.studentId,
           subjectId: dto.subjectId,
           slotId: dto.slotId,
@@ -428,9 +520,12 @@ export class AcademicsService {
       newValue: dto.score,
     });
 
-    const completion = await this.rosterService.checkCompletion(dto.sectionId, dto.term);
+    const completion = await this.rosterService.checkCompletion(
+      dto.sectionId,
+      dto.periodId,
+    );
     if (completion.complete) {
-      await this.rosterService.generateRoster(dto.sectionId, dto.term, section.year);
+      await this.rosterService.generateRoster(dto.sectionId, dto.periodId);
     }
 
     return { data: { message: 'Fallback submission recorded' } };
@@ -439,7 +534,10 @@ export class AcademicsService {
   // ── Corrections (post-publish) ──
 
   @Transactional()
-  async requestCorrection(dto: { resultId: string; reason: string; newScore: number }, requestedBy: string) {
+  async requestCorrection(
+    dto: { resultId: string; reason: string; newScore: number },
+    user: TokenPayload,
+  ) {
     const tenantId = this.getTenantId();
     const result = await this.db.tx.academicResult.findFirst({
       where: { id: dto.resultId, tenantId },
@@ -447,19 +545,25 @@ export class AcademicsService {
     });
     if (!result) throw new NotFoundException('Academic result not found');
 
+    await this.teacherScopeService.assertSectionSubjectAccess(
+      user,
+      result.sectionId,
+      result.subjectId,
+    );
+
     const correction = await this.db.tx.academicCorrection.create({
       data: {
         resultId: dto.resultId,
         reason: dto.reason,
         newScore: dto.newScore,
-        requestedBy,
+        requestedBy: user.profileId!,
         tenantId,
       },
     });
 
     await this.auditService.log({
       action: 'CORRECTION_REQUEST',
-      performedBy: requestedBy,
+      performedBy: user.profileId!,
       performedByRole: 'Teacher',
       branchId: result.section.branchId,
       sectionId: result.sectionId,
@@ -482,7 +586,9 @@ export class AcademicsService {
 
     const corrections = await this.databaseService.academicCorrection.findMany({
       where,
-      include: { result: { include: { student: true, subject: true, slot: true } } },
+      include: {
+        result: { include: { student: true, subject: true, slot: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
     return { data: corrections };
@@ -495,7 +601,8 @@ export class AcademicsService {
       where: { id, tenantId },
       include: { result: { include: { section: true } } },
     });
-    if (!correction) throw new NotFoundException('Correction request not found');
+    if (!correction)
+      throw new NotFoundException('Correction request not found');
     if (correction.status !== 'PENDING') {
       throw new BadRequestException('Correction already processed');
     }
@@ -538,7 +645,8 @@ export class AcademicsService {
     const correction = await this.db.tx.academicCorrection.findFirst({
       where: { id, tenantId },
     });
-    if (!correction) throw new NotFoundException('Correction request not found');
+    if (!correction)
+      throw new NotFoundException('Correction request not found');
 
     await this.db.tx.academicCorrection.update({
       where: { id },
@@ -550,5 +658,16 @@ export class AcademicsService {
 
   private getTenantId(): string {
     return this.cls.get<string>(REQUEST_TENANT_ID)!;
+  }
+
+  private async assertPeriod(periodId: string) {
+    const tenantId = this.getTenantId();
+    const period = await this.db.tx.academicPeriod.findFirst({
+      where: { id: periodId, tenantId },
+    });
+    if (!period) {
+      throw new BadRequestException('Invalid academic period for this tenant');
+    }
+    return period;
   }
 }

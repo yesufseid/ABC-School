@@ -10,7 +10,9 @@ import {
 import { DatabaseService } from '../database/database.service';
 import { HashingService } from '../auth/hashing.service';
 import { REQUEST_TENANT_ID } from '../auth/auth.constants';
+import { TeacherScopeService } from './teacher-scope.service';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
+import { TokenPayload } from '../auth/auth.types';
 import { CreateTeacherDto } from './dtos/create-teacher.dto';
 import { UpdateTeacherDto } from './dtos/update-teacher.dto';
 import { CreateGradeDto } from './dtos/create-grade.dto';
@@ -31,6 +33,7 @@ export class TeacherService {
     >,
     private readonly databaseService: DatabaseService,
     private readonly hashingService: HashingService,
+    private readonly teacherScopeService: TeacherScopeService,
   ) {}
 
   // --- Grade / Subject management ---
@@ -259,7 +262,7 @@ export class TeacherService {
     return { data: teachers.map((t) => this.formatTeacherResponse(t)) };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user?: TokenPayload) {
     const teacher = await this.databaseService
       .getExtendedClient()
       .teacher.findFirst({
@@ -276,7 +279,183 @@ export class TeacherService {
       throw new NotFoundException('Teacher not found');
     }
 
+    if (user?.type === ProfileType.Teacher) {
+      const teacherId = await this.teacherScopeService.resolveTeacherId(
+        user.profileId,
+      );
+      if (teacher.id !== teacherId) {
+        throw new NotFoundException('Teacher not found');
+      }
+    }
+
     return { data: this.formatTeacherResponse(teacher) };
+  }
+
+  async getMyScope(user: TokenPayload) {
+    const teacherId = await this.teacherScopeService.resolveTeacherId(
+      user.profileId,
+    );
+
+    const teacher = await this.databaseService.teacher.findFirst({
+      where: { id: teacherId },
+      include: {
+        profile: { include: { user: true } },
+        grades: {
+          include: { grade: true, subjects: { include: { subject: true } } },
+        },
+      },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException('Teacher not found');
+    }
+
+    const assignments =
+      await this.teacherScopeService.getMyAssignments(user.profileId);
+
+    const sectionIds = [...new Set(assignments.map((a) => a.sectionId))];
+    const subjectIds = [...new Set(assignments.map((a) => a.subjectId))];
+
+    const myStudents =
+      sectionIds.length > 0
+        ? await this.databaseService.studentGrade.count({
+            where: { sectionId: { in: sectionIds } },
+          })
+        : 0;
+
+    return {
+      data: {
+        ...this.formatTeacherResponse(teacher),
+        sections: assignments.map((a) => ({
+          sectionId: a.sectionId,
+          sectionName: a.section.name,
+          grade: a.section.grade.grade,
+          subjectId: a.subjectId,
+          subjectName: a.subject.name,
+          isHomeroom: a.isHomeroom,
+        })),
+        summary: {
+          mySections: sectionIds.length,
+          myStudents,
+          mySubjects: subjectIds.length,
+          weeklyPeriods: teacher.weeklyPeriods,
+        },
+      },
+    };
+  }
+
+  async getMySections(user: TokenPayload) {
+    const assignments =
+      await this.teacherScopeService.getMyAssignments(user.profileId);
+
+    return {
+      data: assignments.map((a) => ({
+        sectionId: a.sectionId,
+        sectionName: a.section.name,
+        grade: a.section.grade.grade,
+        subjectId: a.subjectId,
+        subjectName: a.subject.name,
+        isHomeroom: a.isHomeroom,
+      })),
+    };
+  }
+
+  async getMyStudents(user: TokenPayload) {
+    const assignments =
+      await this.teacherScopeService.getMyAssignments(user.profileId);
+
+    const sectionIds = [...new Set(assignments.map((a) => a.sectionId))];
+
+    if (sectionIds.length === 0) {
+      return { data: [] };
+    }
+
+    const studentGrades = await this.databaseService.studentGrade.findMany({
+      where: { sectionId: { in: sectionIds } },
+      include: {
+        student: true,
+        section: {
+          select: {
+            id: true,
+            name: true,
+            grade: { select: { grade: true } },
+          },
+        },
+      },
+      orderBy: [{ section: { name: 'asc' } }, { studentCode: 'asc' }],
+    });
+
+    return {
+      data: studentGrades.map((sg) => ({
+        studentId: sg.student.id,
+        studentCode: sg.studentCode,
+        studentName: `${sg.student.firstName} ${sg.student.lastName}`,
+        sectionId: sg.sectionId,
+        sectionName: sg.section.name,
+        grade: sg.section.grade.grade,
+        photoUrl: sg.student.photoUrl,
+      })),
+    };
+  }
+
+  async getMyTimetable(user: TokenPayload) {
+    const teacherId = await this.teacherScopeService.resolveTeacherId(
+      user.profileId,
+    );
+
+    const slots = await this.databaseService.timetableSlot.findMany({
+      where: { teacherId },
+      include: {
+        timetable: {
+          select: {
+            year: true,
+            status: true,
+            section: {
+              select: {
+                id: true,
+                name: true,
+                grade: { select: { grade: true } },
+              },
+            },
+          },
+        },
+        subject: { select: { id: true, name: true } },
+      },
+      orderBy: [{ dayOfWeek: 'asc' }, { periodNumber: 'asc' }],
+    });
+
+    const dayOrder: Record<string, number> = {
+      Monday: 1,
+      Tuesday: 2,
+      Wednesday: 3,
+      Thursday: 4,
+      Friday: 5,
+      Saturday: 6,
+      Sunday: 7,
+    };
+
+    const days = Array.from(new Set(slots.map((s) => s.dayOfWeek))).sort(
+      (a, b) => dayOrder[a] - dayOrder[b],
+    );
+
+    const daysData = days.map((day) => ({
+      dayOfWeek: day,
+      periods: slots
+        .filter((s) => s.dayOfWeek === day)
+        .map((s) => ({
+          periodNumber: s.periodNumber,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          subjectId: s.subject?.id,
+          subjectName: s.subject?.name,
+          sectionId: s.timetable?.section?.id,
+          sectionName: s.timetable?.section?.name,
+          grade: s.timetable?.section?.grade?.grade,
+          year: s.timetable?.year,
+        })),
+    }));
+
+    return { data: daysData };
   }
 
   @Transactional()
