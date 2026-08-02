@@ -8,6 +8,8 @@ import { Transactional, TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
 import { DatabaseService } from '../database/database.service';
 import { REQUEST_TENANT_ID } from '../auth/auth.constants';
+import { TeacherScopeService } from '../teacher/teacher-scope.service';
+import { TokenPayload } from '../auth/auth.types';
 import { AuditService } from './audit.service';
 import { RosterService } from './roster.service';
 import { GradebookEntryBatchDto } from './dtos/gradebook-entry.dto';
@@ -19,7 +21,7 @@ import {
   CreateSlotWindowDto,
   UpdateSlotWindowDto,
 } from './dtos/assessment-slot.dto';
-import { AcademicResultStatus } from 'prisma/src/generated/prisma/enums';
+import { AcademicResultStatus, ProfileType } from 'prisma/src/generated/prisma/enums';
 
 @Injectable()
 export class AcademicsService {
@@ -31,6 +33,7 @@ export class AcademicsService {
     private readonly databaseService: DatabaseService,
     private readonly auditService: AuditService,
     private readonly rosterService: RosterService,
+    private readonly teacherScopeService: TeacherScopeService,
   ) {}
 
   // ── Slot CRUD ──
@@ -233,8 +236,14 @@ export class AcademicsService {
   // ── Gradebook Entry ──
 
   @Transactional()
-  async gradebookEntry(dto: GradebookEntryBatchDto, profileId: string) {
+  async gradebookEntry(dto: GradebookEntryBatchDto, user: TokenPayload) {
     const tenantId = this.getTenantId();
+
+    await this.teacherScopeService.assertSectionSubjectAccess(
+      user,
+      dto.sectionId,
+      dto.subjectId,
+    );
 
     await this.assertPeriod(dto.periodId);
 
@@ -295,7 +304,7 @@ export class AcademicsService {
 
       await this.auditService.log({
         action: previousValue === null ? 'SCORE_CREATE' : 'SCORE_UPDATE',
-        performedBy: profileId,
+        performedBy: user.profileId!,
         performedByRole: 'Teacher',
         branchId: section.branchId,
         sectionId: dto.sectionId,
@@ -312,6 +321,7 @@ export class AcademicsService {
       dto.subjectId,
       dto.slotId,
       dto.periodId,
+      user,
     );
   }
 
@@ -320,8 +330,15 @@ export class AcademicsService {
     subjectId: string,
     slotId: string,
     periodId: string,
+    user?: TokenPayload,
   ) {
     const tenantId = this.getTenantId();
+
+    await this.teacherScopeService.assertSectionSubjectAccess(
+      user!,
+      sectionId,
+      subjectId,
+    );
 
     const students = await this.databaseService.studentGrade.findMany({
       where: { sectionId },
@@ -364,8 +381,14 @@ export class AcademicsService {
   }
 
   @Transactional()
-  async submitResults(dto: SubmitResultsDto, profileId: string) {
+  async submitResults(dto: SubmitResultsDto, user: TokenPayload) {
     const tenantId = this.getTenantId();
+
+    await this.teacherScopeService.assertSectionSubjectAccess(
+      user,
+      dto.sectionId,
+      dto.subjectId,
+    );
 
     await this.assertPeriod(dto.periodId);
 
@@ -395,14 +418,14 @@ export class AcademicsService {
       },
       data: {
         status: AcademicResultStatus.SUBMITTED,
-        submittedBy: profileId,
+        submittedBy: user.profileId!,
         submittedAt: new Date(),
       },
     });
 
     await this.auditService.log({
       action: 'SCORE_SUBMIT',
-      performedBy: profileId,
+      performedBy: user.profileId!,
       performedByRole: 'Teacher',
       branchId: section.branchId,
       sectionId: dto.sectionId,
@@ -423,6 +446,7 @@ export class AcademicsService {
       dto.subjectId,
       dto.slotId,
       dto.periodId,
+      user,
     );
   }
 
@@ -512,7 +536,7 @@ export class AcademicsService {
   @Transactional()
   async requestCorrection(
     dto: { resultId: string; reason: string; newScore: number },
-    requestedBy: string,
+    user: TokenPayload,
   ) {
     const tenantId = this.getTenantId();
     const result = await this.db.tx.academicResult.findFirst({
@@ -521,19 +545,25 @@ export class AcademicsService {
     });
     if (!result) throw new NotFoundException('Academic result not found');
 
+    await this.teacherScopeService.assertSectionSubjectAccess(
+      user,
+      result.sectionId,
+      result.subjectId,
+    );
+
     const correction = await this.db.tx.academicCorrection.create({
       data: {
         resultId: dto.resultId,
         reason: dto.reason,
         newScore: dto.newScore,
-        requestedBy,
+        requestedBy: user.profileId!,
         tenantId,
       },
     });
 
     await this.auditService.log({
       action: 'CORRECTION_REQUEST',
-      performedBy: requestedBy,
+      performedBy: user.profileId!,
       performedByRole: 'Teacher',
       branchId: result.section.branchId,
       sectionId: result.sectionId,

@@ -13,7 +13,9 @@ import { UpdateTeacherDto } from './dtos/update-teacher.dto';
 import { CreateGradeDto } from './dtos/create-grade.dto';
 import { UpdateGradeDto } from './dtos/update-grade.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { User } from '../auth/decorators/user.decorator';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
+import { TokenPayload } from '../auth/auth.types';
 
 @Controller('teacher')
 export class TeacherController {
@@ -57,13 +59,43 @@ export class TeacherController {
 
   @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Teacher)
   @Get()
-  findAll() {
+  findAll(@User() user: TokenPayload) {
+    if (user.type === ProfileType.Teacher) {
+      return this.teacherService.getMyScope(user);
+    }
     return this.teacherService.findAll();
+  }
+
+  @Roles(ProfileType.Teacher)
+  @Get('me')
+  getMyProfile(@User() user: TokenPayload) {
+    return this.teacherService.getMyScope(user);
+  }
+
+  @Roles(ProfileType.Teacher)
+  @Get('me/sections')
+  getMySections(@User() user: TokenPayload) {
+    return this.teacherService.getMySections(user);
+  }
+
+  @Roles(ProfileType.Teacher)
+  @Get('me/students')
+  getMyStudents(@User() user: TokenPayload) {
+    return this.teacherService.getMyStudents(user);
+  }
+
+  @Roles(ProfileType.Teacher)
+  @Get('me/timetable')
+  getMyTimetable(@User() user: TokenPayload) {
+    return this.teacherService.getMyTimetable(user);
   }
 
   @Roles(ProfileType.Owner, ProfileType.Registrar, ProfileType.Teacher)
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string, @User() user: TokenPayload) {
+    if (user.type === ProfileType.Teacher) {
+      return this.teacherService.findOne(id, user);
+    }
     return this.teacherService.findOne(id);
   }
 

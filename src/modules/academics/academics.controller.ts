@@ -14,6 +14,7 @@ import { RosterService } from './roster.service';
 import { GradingService } from './grading.service';
 import { AuditService } from './audit.service';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { User } from '../auth/decorators/user.decorator';
 import { ProfileType } from 'prisma/src/generated/prisma/enums';
 import { TokenPayload } from '../auth/auth.types';
 import {
@@ -162,18 +163,18 @@ export class AcademicsController {
   @Post('results/entry')
   gradebookEntry(
     @Body() dto: GradebookEntryBatchDto,
-    @Req() req: { user: TokenPayload },
+    @User() user: TokenPayload,
   ) {
-    return this.academicsService.gradebookEntry(dto, req.user.profileId!);
+    return this.academicsService.gradebookEntry(dto, user);
   }
 
   @Roles(ProfileType.Teacher, ProfileType.Principal)
   @Post('results/submit')
   submitResults(
     @Body() dto: SubmitResultsDto,
-    @Req() req: { user: TokenPayload },
+    @User() user: TokenPayload,
   ) {
-    return this.academicsService.submitResults(dto, req.user.profileId!);
+    return this.academicsService.submitResults(dto, user);
   }
 
   @Roles(ProfileType.Teacher, ProfileType.Principal, ProfileType.VicePrincipal)
@@ -183,12 +184,14 @@ export class AcademicsController {
     @Query('subjectId') subjectId: string,
     @Query('slotId') slotId: string,
     @Query('periodId') periodId: string,
+    @User() user: TokenPayload,
   ) {
     return this.academicsService.getGradebook(
       sectionId,
       subjectId,
       slotId,
       periodId,
+      user,
     );
   }
 
@@ -233,9 +236,9 @@ export class AcademicsController {
   @Post('corrections')
   requestCorrection(
     @Body() dto: CorrectionRequestDto,
-    @Req() req: { user: TokenPayload },
+    @User() user: TokenPayload,
   ) {
-    return this.academicsService.requestCorrection(dto, req.user.profileId!);
+    return this.academicsService.requestCorrection(dto, user);
   }
 
   @Roles(ProfileType.Principal)
